@@ -23,6 +23,7 @@ To use this package:
         photon/      -> where FT1 files are stored
 	spacecraft/  -> where FT2 files are stored
 	catalogs/    -> where source catalog files are stored
+	output/      -> where ST outputs will be stored
 
 
 How to run the analysis:
