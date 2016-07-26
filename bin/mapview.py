@@ -1,0 +1,83 @@
+#!/usr/bin/env python                                                          #
+#                                                                              #
+# Autor: Michela Negro, University of Torino.                                  #
+# On behalf of the Fermi-LAT Collaboration.                                    #
+#                                                                              #
+# This program is free software; you can redistribute it and/or modify         #
+# it under the terms of the GNU GengReral Public License as published by       #
+# the Free Software Foundation; either version 3 of the License, or            #
+# (at your option) any later version.                                          #
+#                                                                              #
+#------------------------------------------------------------------------------
+
+"""Healpix viewer
+"""
+
+import os
+import argparse
+import numpy as np
+import healpy as hp
+from matplotlib import cm
+from GRATools.utils.logging_ import logger, abort, startmsg
+from GRATools.utils.matplotlib_ import pyplot as plt
+from GRATools.utils.matplotlib_ import overlay_tag, save_current_figure
+
+
+__description__ = 'Viewer interface (.fits viewer)'
+
+
+formatter = argparse.ArgumentDefaultsHelpFormatter
+PARSER = argparse.ArgumentParser(description=__description__,
+                                 formatter_class=formatter)
+PARSER.add_argument('--field', type=int, default=0,
+                    help='the input configuration file')
+PARSER.add_argument('--infile', type=str, required=True,
+                    help='input fits file')
+
+def maps_view(**kwargs):
+    """Viewer interface for healpix maps
+    """
+    input_file = kwargs['infile']
+    healpix_maps = hp.read_map(input_file, field=kwargs['field'])
+    if not os.path.exists(input_file):
+        abort("Map %s not found!"%input_file)
+    t = os.path.basename(input_file)
+    plt.figure()
+    if kwargs['field'] == 0:
+        hp.mollview(healpix_maps, title=t.replace('.fits',''), \
+                        coord='G')#, hold=True)
+        hp.graticule()
+        hp.projtext(0, 0,'$\mathbf{0\degree}$', lonlat=True,\
+                        fontsize=20, color='black', coord = 'G')
+        hp.projtext(160, 0,'$\mathbf{180\degree}$', lonlat=True,\
+                        fontsize=20, coord = 'G')
+        hp.projtext(-180, 0,'$\mathbf{-180\degree}$', lonlat=True,\
+                         fontsize=20, coord = 'G')
+        hp.projtext(179, 60,'$\mathbf{60\degree}$', lonlat=True,\
+                        fontsize=20, coord = 'G')
+        hp.projtext(179, -60,'$\mathbf{-60\degree}$', lonlat=True,\
+                        fontsize=20, coord = 'G')
+        overlay_tag(color='silver')
+        save_current_figure(t.replace('.fits','.png'))
+    else:
+        for i, maps in enumerate(healpix_maps):
+            hp.mollview(maps, title=t.replace('.fits','_%i'%i), \
+                            coord='G')
+            hp.graticule()
+            hp.projtext(0, 0,'$\mathbf{0\degree}$', lonlat=True,\
+                            fontsize=20, color='black', coord = 'G')
+            hp.projtext(160, 0,'$\mathbf{180\degree}$', lonlat=True,\
+                            fontsize=20, coord = 'G')
+            hp.projtext(-180, 0,'$\mathbf{-180\degree}$', lonlat=True,\
+                             fontsize=20, coord = 'G')
+            hp.projtext(179, 60,'$\mathbf{60\degree}$', lonlat=True,\
+                            fontsize=20, coord = 'G')
+            hp.projtext(179, -60,'$\mathbf{-60\degree}$', lonlat=True,\
+                            fontsize=20, coord = 'G')
+            overlay_tag(color='silver')
+            save_current_figure(t.replace('.fits','_%i.png'%i))
+
+if __name__ == '__main__':
+    args = PARSER.parse_args()
+    startmsg()
+    maps_view(**args.__dict__)
