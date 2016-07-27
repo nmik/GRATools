@@ -21,6 +21,35 @@ import pyfits as pf
 from GRATools import GRATOOLS_OUT
 from GRATools.utils.logging_ import logger, abort
 
+def get_energy_from_txt(txt_file, get_binning=False, mean='log'):
+    """Returns a list with the center values of the energy bins
+
+       txt_file: str
+           txt file produced in output by mkflux.py application
+       mean: str
+           'log' or 'lin', dependind on the algorithm to use to 
+           compute the mean
+    """
+    f = open(txt_file, 'r')
+    _emin, _emax = [], []
+    for line in f:
+        try:
+            emin, emax  = [float(item) for item in line.split()]
+            _emin.append(emin)
+            _emax.append(emax)
+        except:
+            pass
+    emean = []        
+    if mean == 'log':
+        for emin, emax in zip(_emin, _emax):
+            emean.append(np.sqrt(emin*emax))
+    if mean == 'lin':
+        for emin, emax in zip(_emin, _emax):
+            emean.append(0.5*(emin+emax))
+    if get_binning == True:
+        return np.array(emean), np.array(_emin), np.array(_emax)
+    return np.array(emean)
+
 def get_energy_from_fits(fits_file, mean='log'):
     """Returns a list with the center values of the energy bins
 
@@ -33,14 +62,14 @@ def get_energy_from_fits(fits_file, mean='log'):
     """
     f = pf.open(fits_file)
     ebounds = f[2].data
-    emin_ = ebounds['E_MIN']
-    emax_ = ebounds['E_MAX']
+    _emin = ebounds['E_MIN']
+    _emax = ebounds['E_MAX']
     emean = []        
     if mean == 'log':
-        for emin, emax in zip(emin_, emax_):
+        for emin, emax in zip(_emin, _emax):
             emean.append(np.sqrt(emin*emax))
     if mean == 'lin':
-        for emin, emax in zip(emin_, emax_):
+        for emin, emax in zip(_emin, _emax):
             emean.append(0.5*(emin+emax))
     return emean
 
