@@ -59,10 +59,11 @@ def mkAnalysis(**kwargs):
     ebinning_file = data.EBINNING_FILE
     from  GRATools.utils.gFTools import get_energy_from_txt
     _emean, _emin, _emax = get_energy_from_txt(ebinning_file, get_binning=True)
-    final_maps = []
+    final_maps, final_err_maps, = [], []
     _fmean = [0]*len(_emean)
+    _fmeanerr = [0]*len(_emean)
     for bin, labels in files_dict.iteritems():
-        flux_bin = []
+        flux_bin, fluxerr_bin, = [], []
         _index = []
         bin_num = labels[0]
         en, emin, emax = _emean[bin_num], _emin[bin_num], _emax[bin_num]
@@ -70,15 +71,27 @@ def mkAnalysis(**kwargs):
         for label in labels[1:]:
             flux_map_name = label+'_flux_'+ bin + '.fits'
             flux_map = hp.read_map(os.path.join(GRATOOLS_OUT_FLUX, \
-                                                    flux_map_name ))
+                                                    flux_map_name))
+            fluxerr_map_name = flux_map_name.replace('flux', 'fluxerr')
+            fluxerr_map = hp.read_map(os.path.join(GRATOOLS_OUT_FLUX, \
+                                                    fluxerr_map_name))
             _index = np.where(flux_map != hp.UNSEEN)[0]
             flux_bin.append(flux_map)
+            fluxerr_bin.append(fluxerr_map)
         flux_bin_sum = flux_bin[0]
-        for m in flux_bin[1:]:
+        fluxerr_bin_sum = fluxerr_bin[0]
+        fluxerr_bin_sum[_index] = fluxerr_bin[0][_index]**2
+        for i, m in enumerate(flux_bin[1:]):
             flux_bin_sum[_index] = flux_bin_sum[_index] + m[_index]
+            fluxerr_bin_sum[_index] = fluxerr_bin_sum[_index] + \
+                fluxerr_bin[i][_index]**2
         final_maps.append(flux_bin_sum)
+        final_err_maps.append(np.sqrt(fluxerr_bin_sum))
         mean_flux = np.sum(flux_bin_sum[_index])/len(flux_bin_sum[_index])
+        mean_fluxerr = np.sqrt(np.sum(flux_bin_sum[_index]**2)) \
+            /len(flux_bin_sum[_index])
         _fmean[bin_num] = mean_flux
+        _fmeanerr[bin_num] = mean_fluxerr
         out_name = os.path.join(GRATOOLS_OUT_FLUX, '%s_flux_%i-%i.fits' \
                                     %(out_label, int(emin), int(emin)) )
         hp.write_map(out_name, flux_bin_sum, coord='G')
@@ -86,7 +99,13 @@ def mkAnalysis(**kwargs):
 
     plt.figure(figsize=(10, 7), dpi=80)
     _fmean = np.array(_fmean)
-    plt.loglog(_emean, _fmean*_emean*_emean, 'o', basex=10, basey=10)
+    _fmeanerr = np.array(_fmeanerr)
+    print _fmeanerr*_emean*_emean
+    plt.errorbar(_emean, _fmean*_emean*_emean, fmt='o', markersize=3, \
+                     elinewidth=1, xerr=(_emax-_emin)/2, \
+                     yerr=_fmeanerr*_emean*_emean)
+    plt.xscale("log")
+    plt.yscale("log")
     plt.xlabel('Energy [MeV]')
     plt.ylabel('E$^{2}$ $\cdot$ Flux [MeV cm$^{-2}$ s$^{-1}$ sr$^{-1}$]')
     plt.title('Extra-Galactic Energy Spectrum')

@@ -74,6 +74,7 @@ def mkFlux(**kwargs):
         emap = np.sqrt(exposure_map[i]*exposure_map[i+1])
         flux_map.append(cmap/emap/sr/energy[i]/1000)
     macro_bins = data.MACRO_BINS
+    gamma = data.POWER_LOW_INDEX
     out_label = data.OUT_LABEL
     logger.info('Rebinning...')
     new_ebinning_txt = open(os.path.join(GRATOOLS_OUT,out_label+\
@@ -84,8 +85,13 @@ def mkFlux(**kwargs):
         new_ebinning_txt.write('%.2f %.2f\n' \
                                    %(energy[minb]/1000, energy[maxb]/1000))
         macro_flux = flux_map[minb]
+        macro_fluxerr = (energy[minb]/energy[0])**(-gamma)/(exposure_map[minb]*\
+                                                                energy[minb])**2
         for b in range(minb+1, maxb):
             macro_flux = macro_flux + flux_map[b]
+            macro_fluxerr = macro_fluxerr + \
+                (energy[b]/energy[0])**(-gamma)/(exposure_map[b]*energy[b])**2
+        macro_fluxerr = np.sqrt(count_map[0]*macro_fluxerr)/sr
         bad_pix = []
         if kwargs['srcmask'] == True:
             from GRATools.utils.gMasks import mask_src
@@ -100,14 +106,20 @@ def mkFlux(**kwargs):
             bad_pix += mask_gp(gp_mask_lat, nside)
         for bpix in bad_pix:
             macro_flux[bpix] = hp.UNSEEN
+            macro_fluxerr[bpix] = hp.UNSEEN
         hp.mask_bad(macro_flux)
+        hp.mask_bad(macro_fluxerr)
         out_folder = os.path.join(GRATOOLS_OUT,'output_flux')
         if not os.path.exists(out_folder):
             os.makedirs(out_folder)
         out_name = os.path.join(out_folder,out_label+'_flux_%i-%i.fits'\
                                       %(minb, maxb))
+        out_name_err = os.path.join(out_folder,out_label+'_fluxerr_%i-%i.fits'\
+                                        %(minb, maxb))
         hp.write_map(out_name, macro_flux, coord='G')
+        hp.write_map(out_name_err, macro_flux, coord='G')
         logger.info('Created %s' %out_name)
+        logger.info('Created %s' %out_name_err)
     new_ebinning_txt.close()
     logger.info('Created %s' %os.path.join(GRATOOLS_OUT,out_label+\
                                                    'new_ebinning.txt'))
