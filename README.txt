@@ -34,4 +34,4 @@ python bin/mkdataselection.py --config config/1yr_st_aniso_config.py
 
 python bin/mkflux.py --infile output/1yr_UCV_t56_outfiles.txt --config config/1yr_flux_config.py
 
-python bin/mkanalysis.py --config config/allyrs_analysis.py
+python bin/mkanalysis.py --config config/allyrs_analysis_config.py
