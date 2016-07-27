@@ -88,7 +88,7 @@ def mkAnalysis(**kwargs):
     _fmean = np.array(_fmean)
     plt.loglog(_emean, _fmean*_emean*_emean, 'o', basex=10, basey=10)
     plt.xlabel('Energy [MeV]')
-    plt.ylabel('E$^{2}$ $\cdot$ Flux [MeV$^{-1}$ cm$^{-2}$ s$^{-1}$ sr$^{-1}$]')
+    plt.ylabel('E$^{2}$ $\cdot$ Flux [MeV cm$^{-2}$ s$^{-1}$ sr$^{-1}$]')
     plt.title('Extra-Galactic Energy Spectrum')
     overlay_tag()
     save_current_figure(out_label+'_ESpec.png')    
