@@ -33,6 +33,8 @@ PARSER.add_argument('--field', type=int, default=0,
                     help='the input configuration file')
 PARSER.add_argument('--infile', type=str, required=True,
                     help='input fits file')
+PARSER.add_argument('--udgrade', type=int, default=512,
+                    help='')
 
 def maps_view(**kwargs):
     """Viewer interface for healpix maps
@@ -43,37 +45,22 @@ def maps_view(**kwargs):
         abort("Map %s not found!"%input_file)
     t = os.path.basename(input_file)
     plt.figure()
+    nside_out = kwargs['udgrade']
     if kwargs['field'] == 0:
+        healpix_maps = hp.pixelfunc.ud_grade(healpix_maps, nside_out, pess=True)
         hp.mollview(healpix_maps, title=t.replace('.fits',''), \
                         coord='G')#, hold=True)
+        
         hp.graticule()
-        hp.projtext(0, 0,'$\mathbf{0\degree}$', lonlat=True,\
-                        fontsize=20, color='black', coord = 'G')
-        hp.projtext(160, 0,'$\mathbf{180\degree}$', lonlat=True,\
-                        fontsize=20, coord = 'G')
-        hp.projtext(-180, 0,'$\mathbf{-180\degree}$', lonlat=True,\
-                         fontsize=20, coord = 'G')
-        hp.projtext(179, 60,'$\mathbf{60\degree}$', lonlat=True,\
-                        fontsize=20, coord = 'G')
-        hp.projtext(179, -60,'$\mathbf{-60\degree}$', lonlat=True,\
-                        fontsize=20, coord = 'G')
         overlay_tag(color='silver')
         save_current_figure(t.replace('.fits','.png'))
     else:
         for i, maps in enumerate(healpix_maps):
+            healpix_maps = hp.pixelfunc.ud_grade(healpix_maps, nside_out, \
+                                                     pess=True)
             hp.mollview(maps, title=t.replace('.fits','_%i'%i), \
                             coord='G')
             hp.graticule()
-            hp.projtext(0, 0,'$\mathbf{0\degree}$', lonlat=True,\
-                            fontsize=20, color='black', coord = 'G')
-            hp.projtext(160, 0,'$\mathbf{180\degree}$', lonlat=True,\
-                            fontsize=20, coord = 'G')
-            hp.projtext(-180, 0,'$\mathbf{-180\degree}$', lonlat=True,\
-                             fontsize=20, coord = 'G')
-            hp.projtext(179, 60,'$\mathbf{60\degree}$', lonlat=True,\
-                            fontsize=20, coord = 'G')
-            hp.projtext(179, -60,'$\mathbf{-60\degree}$', lonlat=True,\
-                            fontsize=20, coord = 'G')
             overlay_tag(color='silver')
             save_current_figure(t.replace('.fits','_%i.png'%i))
 
