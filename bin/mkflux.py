@@ -10,8 +10,10 @@
 #                                                                              #
 #------------------------------------------------------------------------------#
 
+
 """Flux analysis
 """
+
 
 import os
 import imp
@@ -48,7 +50,9 @@ def get_var_from_file(filename):
     data = imp.load_source('data', '', f)
     f.close()
 
-def mkFluxAnalysis(**kwargs):
+def mkFlux(**kwargs):
+    """
+    """
     logger.info('Starting flux analysis...')
     get_var_from_file(kwargs['config'])
     txt = open(kwargs['infile'],'r')
@@ -100,16 +104,16 @@ def mkFluxAnalysis(**kwargs):
         out_folder = os.path.join(GRATOOLS_OUT,'output_flux')
         if not os.path.exists(out_folder):
             os.makedirs(out_folder)
-        new_ebinning_txt.close()
-        logger.info('Created %s' %os.path.join(GRATOOLS_OUT,out_label+\
-                                                   'new_ebinning.txt'))
         out_name = os.path.join(out_folder,out_label+'_flux_%i-%i.fits'\
                                       %(minb, maxb))
         hp.write_map(out_name, macro_flux, coord='G')
         logger.info('Created %s' %out_name)
+    new_ebinning_txt.close()
+    logger.info('Created %s' %os.path.join(GRATOOLS_OUT,out_label+\
+                                                   'new_ebinning.txt'))
     logger.info('done!')
 
 if __name__ == '__main__':
     args = PARSER.parse_args()
     startmsg()
-    mkFluxAnalysis(**args.__dict__)
+    mkFlux(**args.__dict__)
