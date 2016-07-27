@@ -28,10 +28,12 @@ To use this package:
 
 How to run the analysis:
 ------------------------
-example:
+examples:
 
 python bin/mkdataselection.py --config config/1yr_st_aniso_config.py
 
-python bin/mkflux.py --infile output/1yr_UCV_t56_outfiles.txt --config config/1yr_flux_config.py
+python bin/mkflux.py --infile output/1yr_UCV_t56_outfiles.txt --config config/flux_config.py
 
 python bin/mkanalysis.py --config config/allyrs_analysis_config.py
+
+python bin/mapview.py --infile output/output_flux/Allyrs_UCV_t56_flux_549-549.fits --udgrade 128
