@@ -25,6 +25,7 @@ __description__ = 'Run the Science Tools'
 """Command-line switches.
 """
 
+import ast
 import argparse
 from GRATools.utils.logging_ import logger, startmsg
 
@@ -33,8 +34,9 @@ PARSER = argparse.ArgumentParser(description=__description__,
                                  formatter_class=formatter)
 PARSER.add_argument('--config', type=str, required=True,
                     help='the input configuration file')
-PARSER.add_argument('--gtltcube', type=bool, default=True,
-                    help='if gtltcube command must not be run')
+PARSER.add_argument('--gtltcube', type=ast.literal_eval, choices=[True, False], 
+                    default=True,
+                    help='False if gtltcube command must not be run')
 
 def get_var_from_file(filename):
     f = open(filename)
@@ -88,6 +90,9 @@ def mkSTanalysis(**kwargs):
             gtltcube_dict['evfile'] = out_gtmktime
         out_gtltcube = gtltcube(out_label, gtltcube_dict)
         txt_out_files.write(out_gtltcube+'\n')
+    else:
+        logger.info('Not running gtltcube.')
+        pass
 
     from GRATools.utils.ScienceTools_ import gtexpcube2
     gtexpcube2_dict = data.GTEXPCUBE2_DICT
