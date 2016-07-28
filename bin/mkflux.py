@@ -27,7 +27,7 @@ __description__ = 'Computes fluxes'
 
 """Command-line switches.
 """
-
+import ast
 import argparse
 from GRATools import GRATOOLS_OUT
 from GRATools.utils.logging_ import logger, startmsg
@@ -39,9 +39,11 @@ PARSER.add_argument('--infile', type=str, required=True,
                     help='txt file with paths of ST output files')
 PARSER.add_argument('--config', type=str, required=True,
                     help='the input configuration file')
-PARSER.add_argument('--srcmask', type=str, default=True,
+PARSER.add_argument('--srcmask', type=ast.literal_eval, choices=[True, False],
+                    default=True,
                     help='sources mask activated')
-PARSER.add_argument('--gpmask', type=str, default=True,
+PARSER.add_argument('--gpmask', type=ast.literal_eval, choices=[True, False],
+                    default=True,
                     help='galactic plain mask activated')
 
 def get_var_from_file(filename):
@@ -72,13 +74,15 @@ def mkFlux(**kwargs):
     sr = 4*np.pi/hp.nside2npix(nside)
     for i, cmap in enumerate(count_map):
         emap = np.sqrt(exposure_map[i]*exposure_map[i+1])
-        flux_map.append(cmap/emap/sr/energy[i]/1000)
+        flux_map.append(cmap/emap/sr/(energy[i]/1000))
     macro_bins = data.MACRO_BINS
     gamma = data.POWER_LOW_INDEX
     out_label = data.OUT_LABEL
     logger.info('Rebinning...')
     new_ebinning_txt = open(os.path.join(GRATOOLS_OUT,out_label+\
-                                             'new_ebinning.txt'), 'w')
+                                             '_new_ebinning_cn.txt'), 'w')
+    new_ebinning_txt.write('#MACRO ENERGY BINNING\n\n')
+    CNs = []
     for minb, maxb in macro_bins:
         logger.info('Merging fluxes from %.2f to %.2f MeV' \
                         %(energy[minb]/1000, energy[maxb]/1000))
@@ -87,11 +91,15 @@ def mkFlux(**kwargs):
         macro_flux = flux_map[minb]
         macro_fluxerr = (energy[minb]/energy[0])**(-gamma)/(exposure_map[minb]*\
                                                                 energy[minb])**2
+        CN_bin = np.average(count_map[minb]/(exposure_map[minb])**2)/sr
         for b in range(minb+1, maxb):
             macro_flux = macro_flux + flux_map[b]
             macro_fluxerr = macro_fluxerr + \
                 (energy[b]/energy[0])**(-gamma)/(exposure_map[b]*energy[b])**2
+            CN_bin = CN_bin + np.average(count_map[b]/(exposure_map[b])**2)/sr
+        logger.info('CN (white noise) term = %e'%CN_bin)
         macro_fluxerr = np.sqrt(count_map[0]*macro_fluxerr)/sr
+        CNs.append(CN_bin)
         bad_pix = []
         if kwargs['srcmask'] == True:
             from GRATools.utils.gMasks import mask_src
@@ -120,9 +128,12 @@ def mkFlux(**kwargs):
         hp.write_map(out_name_err, macro_flux, coord='G')
         logger.info('Created %s' %out_name)
         logger.info('Created %s' %out_name_err)
+    new_ebinning_txt.write('\n\n#MACRO BIN WHITE NOISE\n\n')
+    for cn in CNs:
+        new_ebinning_txt.write(str(cn)+'\n')
     new_ebinning_txt.close()
     logger.info('Created %s' %os.path.join(GRATOOLS_OUT,out_label+\
-                                                   'new_ebinning.txt'))
+                                                   '_new_ebinning_cn.txt'))
     logger.info('done!')
 
 if __name__ == '__main__':
