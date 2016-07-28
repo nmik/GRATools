@@ -21,6 +21,23 @@ import pyfits as pf
 from GRATools import GRATOOLS_OUT
 from GRATools.utils.logging_ import logger, abort
 
+def get_cn_from_txt(txt_file):
+    """Returns a list with the white noise values
+
+       txt_file: str
+           txt file produced in output by mkflux.py application
+    """
+    f = open(txt_file, 'r')
+    _cn = []
+    for line in f:
+        try:
+            cn = [float(item) for item in line.split()]
+            _cn.append(cn)
+        except:
+            pass
+    f.close()
+    return _cn
+
 def get_energy_from_txt(txt_file, get_binning=False, mean='log'):
     """Returns a list with the center values of the energy bins
 
@@ -39,6 +56,7 @@ def get_energy_from_txt(txt_file, get_binning=False, mean='log'):
             _emax.append(emax)
         except:
             pass
+    f.close()
     emean = []        
     if mean == 'log':
         for emin, emax in zip(_emin, _emax):
@@ -71,6 +89,7 @@ def get_energy_from_fits(fits_file, mean='log'):
     if mean == 'lin':
         for emin, emax in zip(_emin, _emax):
             emean.append(0.5*(emin+emax))
+    f.close()
     return emean
 
 def ebinning_fits_file(ebinning_array):
