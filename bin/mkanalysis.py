@@ -58,17 +58,24 @@ def mkAnalysis(**kwargs):
     out_label = data.OUT_LABEL
     ebinning_file = data.EBINNING_FILE
     from  GRATools.utils.gFTools import get_energy_from_txt
+    from  GRATools.utils.gFTools import get_cn_from_txt
     _emean, _emin, _emax = get_energy_from_txt(ebinning_file, get_binning=True)
     final_maps, final_err_maps, = [], []
     _fmean = [0]*len(_emean)
     _fmeanerr = [0]*len(_emean)
+    _cnmean = [0]*len(_emean)
+    nyrs = len(data.LABELS_LIST)
     for bin, labels in files_dict.iteritems():
         flux_bin, fluxerr_bin, = [], []
         _index = []
         bin_num = labels[0]
         en, emin, emax = _emean[bin_num], _emin[bin_num], _emax[bin_num]
         logger.info('considering bin: %i MeV...' %int(en))
+        _cn = []
         for label in labels[1:]:
+            cn_file = os.path.join(GRATOOLS_OUT,'%s_new_ebinning_cn.txt'%label)
+            cn = get_cn_from_txt(cn_file)[bin_num]
+            _cn.append(cn)
             flux_map_name = label+'_flux_'+ bin + '.fits'
             flux_map = hp.read_map(os.path.join(GRATOOLS_OUT_FLUX, \
                                                     flux_map_name))
@@ -78,6 +85,8 @@ def mkAnalysis(**kwargs):
             _index = np.where(flux_map != hp.UNSEEN)[0]
             flux_bin.append(flux_map)
             fluxerr_bin.append(fluxerr_map)
+        print _cn 
+        _cnmean[bin_num] = np.average(np.array(_cn))
         flux_bin_sum = flux_bin[0]
         fluxerr_bin_sum = fluxerr_bin[0]
         fluxerr_bin_sum[_index] = fluxerr_bin[0][_index]**2
@@ -87,20 +96,20 @@ def mkAnalysis(**kwargs):
                 fluxerr_bin[i][_index]**2
         final_maps.append(flux_bin_sum)
         final_err_maps.append(np.sqrt(fluxerr_bin_sum))
-        mean_flux = np.sum(flux_bin_sum[_index])/len(flux_bin_sum[_index])
+        mean_flux = np.sum(flux_bin_sum[_index])/len(flux_bin_sum[_index])/nyrs
         mean_fluxerr = np.sqrt(np.sum(flux_bin_sum[_index]**2)) \
-            /len(flux_bin_sum[_index])
+            /len(flux_bin_sum[_index])/nyrs
         _fmean[bin_num] = mean_flux
         _fmeanerr[bin_num] = mean_fluxerr
         out_name = os.path.join(GRATOOLS_OUT_FLUX, '%s_flux_%i-%i.fits' \
-                                    %(out_label, int(emin), int(emin)) )
+                                    %(out_label, int(emin), int(emax)) )
         hp.write_map(out_name, flux_bin_sum, coord='G')
         logger.info('Created %s' %out_name)
 
+    print _cnmean
     plt.figure(figsize=(10, 7), dpi=80)
     _fmean = np.array(_fmean)
     _fmeanerr = np.array(_fmeanerr)
-    print _fmeanerr*_emean*_emean
     plt.errorbar(_emean, _fmean*_emean*_emean, fmt='o', markersize=3, \
                      elinewidth=1, xerr=(_emax-_emin)/2, \
                      yerr=_fmeanerr*_emean*_emean)
