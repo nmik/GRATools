@@ -85,7 +85,7 @@ def mkAnalysis(**kwargs):
             _index = np.where(flux_map != hp.UNSEEN)[0]
             flux_bin.append(flux_map)
             fluxerr_bin.append(fluxerr_map)
-        print _cn 
+        #print _cn 
         _cnmean[bin_num] = np.average(np.array(_cn))
         flux_bin_sum = flux_bin[0]
         fluxerr_bin_sum = fluxerr_bin[0]
@@ -106,11 +106,15 @@ def mkAnalysis(**kwargs):
         hp.write_map(out_name, flux_bin_sum, coord='G')
         logger.info('Created %s' %out_name)
 
-    print _cnmean
+    #print _cnmean
     plt.figure(figsize=(10, 7), dpi=80)
     _fmean = np.array(_fmean)
     _fmeanerr = np.array(_fmeanerr)
-    plt.errorbar(_emean, _fmean*_emean*_emean, fmt='o', markersize=3, \
+    from GRATools.utils.gDrawRef import ref_igrb_band
+    from GRATools.utils.gDrawRef import ref_igrb_noFGsub
+    leg, lab = ref_igrb_band()
+    igrb, lab_igrb = ref_igrb_noFGsub()
+    spec = plt.errorbar(_emean, _fmean*_emean*_emean, fmt='o', markersize=3, \
                      elinewidth=1, xerr=(_emax-_emin)/2, \
                      yerr=_fmeanerr*_emean*_emean)
     plt.xscale("log")
@@ -118,7 +122,8 @@ def mkAnalysis(**kwargs):
     plt.xlabel('Energy [MeV]')
     plt.ylabel('E$^{2}$ $\cdot$ Flux [MeV cm$^{-2}$ s$^{-1}$ sr$^{-1}$]')
     plt.title('Extra-Galactic Energy Spectrum')
-    overlay_tag()
+    plt.legend([spec, igrb, leg], [out_label, lab_igrb, lab])#handles=[igrb, spec])
+    overlay_tag(x=0.45, y=0.05)
     save_current_figure(out_label+'_ESpec.png')    
 
 
