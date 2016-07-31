@@ -59,7 +59,7 @@ def mask_gp(MASK_GP_LAT,NSIDE):
        NSIDE: int
            healpix nside parameter
     """
-    logger.info('Mask for the galactic plain activated')
+    logger.info('Mask for the galactic plane activated')
     NPIX = hp.pixelfunc.nside2npix(NSIDE)
     BAD_PIX_GP = []
     iii = range(NPIX)

@@ -27,7 +27,7 @@ def ref_igrb_noFGsub():
     f = open(os.path.join(GRATOOLS_CONFIG,'ascii/IGRB_P7REP_noFGsub.txt'), 'r')
     y = [float(l.split()[1]) for l in f]
     igrb, = plt.plot(x, y, '--', color='red')
-    label = 'LAT data (P7REF IGRB)'
+    label = 'LAT data (P7REP IGRB)'
     return igrb, label
 
 def ref_igrb_band():

@@ -21,6 +21,30 @@ import pyfits as pf
 from GRATools import GRATOOLS_OUT
 from GRATools.utils.logging_ import logger, abort
 
+def get_cl_param(cl_param_file):
+    """
+    """
+    logger.info('loading parameters from %s'%cl_param_file)
+    f = open(cl_param_file, 'r')
+    _emin, _emax, _emean, _f, _ferr, _cn, fsky = [], [], [], [], [], \
+        [], []
+    for line in f:
+        if 'E_MIN' in line:
+            _emin = np.array([float(i) for i in line.split()[1:]])
+        if 'E_MAX' in line:
+            _emax = np.array([float(i) for i in line.split()[1:]])
+        if 'E_MEAN' in line:
+            _emean = np.array([float(i) for i in line.split()[1:]])
+        if 'F_MEAN' in line:
+            _f = np.array([float(i) for i in line.split()[1:]])
+        if 'FERR_MEAN' in line:
+            _ferr = np.array([float(i) for i in line.split()[1:]])
+        if 'CN_MEAN' in line:
+            _cn = np.array([float(i) for i in line.split()[1:]])
+        if 'FSKY' in line:
+            fsky = float(line.split()[1])
+    return _emin, _emax, _emean, _f, _ferr, _cn, fsky
+        
 def get_cn_from_txt(txt_file):
     """Returns a list with the white noise values
 
@@ -31,8 +55,9 @@ def get_cn_from_txt(txt_file):
     _cn = []
     for line in f:
         try:
-            cn = [float(item) for item in line.split()]
-            _cn.append(cn)
+            cn = [float(item) for item in line.split() if float(item)<1.][0]
+            if type(cn) == float:
+                _cn.append(cn)
         except:
             pass
     f.close()
@@ -66,7 +91,7 @@ def get_energy_from_txt(txt_file, get_binning=False, mean='log'):
             emean.append(0.5*(emin+emax))
     if get_binning == True:
         return np.array(emean), np.array(_emin), np.array(_emax)
-    return np.array(emean)
+    return np.array(_emin), np.array(_emax), np.array(emean)
 
 def get_energy_from_fits(fits_file, mean='log'):
     """Returns a list with the center values of the energy bins
@@ -90,7 +115,7 @@ def get_energy_from_fits(fits_file, mean='log'):
         for emin, emax in zip(_emin, _emax):
             emean.append(0.5*(emin+emax))
     f.close()
-    return emean
+    return np.array(_emin), np.array(_emax), np.array(emean)
 
 def ebinning_fits_file(ebinning_array):
     """Produces a fits file defining the enrgy binning to fed gtbin.

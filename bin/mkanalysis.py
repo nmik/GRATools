@@ -56,7 +56,10 @@ def mkAnalysis(**kwargs):
     get_var_from_file(kwargs['config'])
     files_dict = data.FILES_DICT
     out_label = data.OUT_LABEL
-    ebinning_file = data.EBINNING_FILE
+    binning_label = data.BINNING_LABEL
+    label_list = data.LABELS_LIST
+    ebinning_file = os.path.join(GRATOOLS_OUT, '%s_%s_new_ebinning_cn.txt' \
+                                     %(label_list[0], binning_label))
     from  GRATools.utils.gFTools import get_energy_from_txt
     from  GRATools.utils.gFTools import get_cn_from_txt
     _emean, _emin, _emax = get_energy_from_txt(ebinning_file, get_binning=True)
@@ -64,7 +67,8 @@ def mkAnalysis(**kwargs):
     _fmean = [0]*len(_emean)
     _fmeanerr = [0]*len(_emean)
     _cnmean = [0]*len(_emean)
-    nyrs = len(data.LABELS_LIST)
+    nyrs = len(label_list)
+    fsky = 0
     for bin, labels in files_dict.iteritems():
         flux_bin, fluxerr_bin, = [], []
         _index = []
@@ -73,7 +77,8 @@ def mkAnalysis(**kwargs):
         logger.info('considering bin: %i MeV...' %int(en))
         _cn = []
         for label in labels[1:]:
-            cn_file = os.path.join(GRATOOLS_OUT,'%s_new_ebinning_cn.txt'%label)
+            cn_file = os.path.join(GRATOOLS_OUT,'%s_%s_new_ebinning_cn.txt' \
+                                       %(label, binning_label))
             cn = get_cn_from_txt(cn_file)[bin_num]
             _cn.append(cn)
             flux_map_name = label+'_flux_'+ bin + '.fits'
@@ -85,7 +90,6 @@ def mkAnalysis(**kwargs):
             _index = np.where(flux_map != hp.UNSEEN)[0]
             flux_bin.append(flux_map)
             fluxerr_bin.append(fluxerr_map)
-        #print _cn 
         _cnmean[bin_num] = np.average(np.array(_cn))
         flux_bin_sum = flux_bin[0]
         fluxerr_bin_sum = fluxerr_bin[0]
@@ -96,6 +100,7 @@ def mkAnalysis(**kwargs):
                 fluxerr_bin[i][_index]**2
         final_maps.append(flux_bin_sum)
         final_err_maps.append(np.sqrt(fluxerr_bin_sum))
+        fsky = float(len(flux_bin_sum[_index]))/float(len(flux_bin_sum))
         mean_flux = np.sum(flux_bin_sum[_index])/len(flux_bin_sum[_index])/nyrs
         mean_fluxerr = np.sqrt(np.sum(flux_bin_sum[_index]**2)) \
             /len(flux_bin_sum[_index])/nyrs
@@ -105,8 +110,23 @@ def mkAnalysis(**kwargs):
                                     %(out_label, int(emin), int(emax)) )
         hp.write_map(out_name, flux_bin_sum, coord='G')
         logger.info('Created %s' %out_name)
-
-    #print _cnmean
+    
+    txt_outfile = open(os.path.join(GRATOOLS_OUT, out_label+'_report.txt'),'w')
+    txt_outfile.write('E_MIN\t'+str([i for i in _emin]).replace('[','').\
+                          replace(']','').replace(',','')+'\n')
+    txt_outfile.write('E_MAX\t'+str([i for i in _emax]).replace('[','').\
+                          replace(']','').replace(',','')+'\n')
+    txt_outfile.write('E_MEAN\t'+str([i for i in _emean]).replace('[','').\
+                          replace(']','').replace(',','')+'\n')
+    txt_outfile.write('F_MEAN\t'+str([i for i in _fmean]).replace('[','').\
+                          replace(']','').replace(',','')+'\n')
+    txt_outfile.write('FERR_MEAN\t'+str([i for i in _fmeanerr]).replace('[','').\
+                          replace(']','').replace(',','')+'\n')
+    txt_outfile.write('CN_MEAN\t'+str([i for i in _cnmean]).replace('[','').\
+                          replace(']','').replace(',','')+'\n')
+    txt_outfile.write('FSKY\t'+str(fsky)+'\n')
+    logger.info('Created %s' %os.path.join(GRATOOLS_OUT, out_label+'_report.txt'))
+    
     plt.figure(figsize=(10, 7), dpi=80)
     _fmean = np.array(_fmean)
     _fmeanerr = np.array(_fmeanerr)
@@ -122,7 +142,7 @@ def mkAnalysis(**kwargs):
     plt.xlabel('Energy [MeV]')
     plt.ylabel('E$^{2}$ $\cdot$ Flux [MeV cm$^{-2}$ s$^{-1}$ sr$^{-1}$]')
     plt.title('Extra-Galactic Energy Spectrum')
-    plt.legend([spec, igrb, leg], [out_label, lab_igrb, lab])#handles=[igrb, spec])
+    plt.legend([spec, igrb, leg], [out_label, lab_igrb, lab])
     overlay_tag(x=0.45, y=0.05)
     save_current_figure(out_label+'_ESpec.png')    
 

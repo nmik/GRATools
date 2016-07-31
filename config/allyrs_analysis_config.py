@@ -15,22 +15,22 @@ from GRATools import GRATOOLS_OUT
 
 
 OUT_LABEL = 'Allyrs_UCV_t56'
-EBINNING_FILE = os.path.join(GRATOOLS_OUT, '1yr_UCV_t56new_ebinning.txt')
+BINNING_LABEL = '13bins'
 LABELS_LIST = ['1yr_UCV_t56', '2yr_UCV_t56',
                '3yr_UCV_t56', '4yr_UCV_t56',
                '5yr_UCV_t56', '6yr_UCV_t56',
                '7yr_UCV_t56', '8yr_UCV_t56']
-FILES_DICT = {'18-25': [0]+LABELS_LIST,
-              '25-31': [1]+LABELS_LIST,
-              '31-36': [2]+LABELS_LIST,
-              '36-42': [3]+LABELS_LIST,
-              '42-48': [4]+LABELS_LIST,
-              '48-54': [5]+LABELS_LIST,
-              '54-59': [6]+LABELS_LIST,
-              '59-65': [7]+LABELS_LIST,
-              '65-71': [8]+LABELS_LIST,
-              '71-77': [9]+LABELS_LIST,
-              '77-82': [10]+LABELS_LIST,
-              '82-88': [11]+LABELS_LIST,
-              '88-94': [12]+LABELS_LIST
+FILES_DICT = {'524-1000': [0]+LABELS_LIST,
+              '1000-1737': [1]+LABELS_LIST,
+              '1737-2754': [2]+LABELS_LIST,
+              '2754-4786': [3]+LABELS_LIST,
+              '4786-8317': [4]+LABELS_LIST,
+              '8317-14454': [5]+LABELS_LIST,
+              '14454-22908': [6]+LABELS_LIST,
+              '22908-39810': [7]+LABELS_LIST,
+              '39810-69183': [8]+LABELS_LIST,
+              '69183-120226': [9]+LABELS_LIST,
+              '120226-190546': [10]+LABELS_LIST,
+              '190546-331131': [11]+LABELS_LIST,
+              '331131-575439': [12]+LABELS_LIST
               }

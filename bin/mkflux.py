@@ -65,7 +65,7 @@ def mkFlux(**kwargs):
         if 'gtbin' in line:
             count_map = hp.read_map(line, field=range(0,nbins))
             from  GRATools.utils.gFTools import get_energy_from_fits
-            energy = get_energy_from_fits(line)
+            emin, emax, emean = get_energy_from_fits(line)
         if 'gtexpcube2' in line:
             exposure_map = hp.read_map(line, field=range(0,nbins+1))
     flux_map = []
@@ -74,28 +74,29 @@ def mkFlux(**kwargs):
     sr = 4*np.pi/hp.nside2npix(nside)
     for i, cmap in enumerate(count_map):
         emap = np.sqrt(exposure_map[i]*exposure_map[i+1])
-        flux_map.append(cmap/emap/sr/(energy[i]/1000))
+        flux_map.append(cmap/emap/sr/(emean[i]/1000))
     macro_bins = data.MACRO_BINS
     gamma = data.POWER_LOW_INDEX
     out_label = data.OUT_LABEL
+    binning_label = data.BINNING_LABEL
     logger.info('Rebinning...')
-    new_ebinning_txt = open(os.path.join(GRATOOLS_OUT,out_label+\
-                                             '_new_ebinning_cn.txt'), 'w')
+    new_ebinning_txt = open(os.path.join(GRATOOLS_OUT, '%s_%s_new_ebinning_cn.txt' \
+                                             %(out_label, binning_label)), 'w')
     new_ebinning_txt.write('#MACRO ENERGY BINNING\n\n')
     CNs = []
     for minb, maxb in macro_bins:
         logger.info('Merging fluxes from %.2f to %.2f MeV' \
-                        %(energy[minb]/1000, energy[maxb]/1000))
+                        %(emin[minb]/1000, emax[maxb]/1000))
         new_ebinning_txt.write('%.2f %.2f\n' \
-                                   %(energy[minb]/1000, energy[maxb]/1000))
+                                   %(emin[minb]/1000, emax[maxb]/1000))
         macro_flux = flux_map[minb]
-        macro_fluxerr = (energy[minb]/energy[0])**(-gamma)/(exposure_map[minb]*\
-                                                                energy[minb])**2
+        macro_fluxerr = (emean[minb]/emean[0])**(-gamma)/(exposure_map[minb]*\
+                                                                emean[minb])**2
         CN_bin = np.average(count_map[minb]/(exposure_map[minb])**2)/sr
         for b in range(minb+1, maxb):
             macro_flux = macro_flux + flux_map[b]
             macro_fluxerr = macro_fluxerr + \
-                (energy[b]/energy[0])**(-gamma)/(exposure_map[b]*energy[b])**2
+                (emean[b]/emean[0])**(-gamma)/(exposure_map[b]*emean[b])**2
             CN_bin = CN_bin + np.average(count_map[b]/(exposure_map[b])**2)/sr
         logger.info('CN (white noise) term = %e'%CN_bin)
         macro_fluxerr = np.sqrt(count_map[0]*macro_fluxerr)/sr
@@ -121,9 +122,9 @@ def mkFlux(**kwargs):
         if not os.path.exists(out_folder):
             os.makedirs(out_folder)
         out_name = os.path.join(out_folder,out_label+'_flux_%i-%i.fits'\
-                                      %(minb, maxb))
+                                      %(emin[minb]/1000, emax[maxb]/1000))
         out_name_err = os.path.join(out_folder,out_label+'_fluxerr_%i-%i.fits'\
-                                        %(minb, maxb))
+                                        %(emin[minb]/1000, emax[maxb]/1000))
         hp.write_map(out_name, macro_flux, coord='G')
         hp.write_map(out_name_err, macro_flux, coord='G')
         logger.info('Created %s' %out_name)
@@ -132,8 +133,8 @@ def mkFlux(**kwargs):
     for cn in CNs:
         new_ebinning_txt.write(str(cn)+'\n')
     new_ebinning_txt.close()
-    logger.info('Created %s' %os.path.join(GRATOOLS_OUT,out_label+\
-                                                   '_new_ebinning_cn.txt'))
+    logger.info('Created %s' %os.path.join(GRATOOLS_OUT, '%s_%s_new_ebinning_cn.txt' \
+                                             %(out_label, binning_label)))
     logger.info('done!')
 
 if __name__ == '__main__':
