@@ -43,40 +43,40 @@ def get_wbeam(wb_file):
                    yunits='MeV', zname='W$_{beam}$(E,$l$)')
     wbeam = xInterpolatedBivariateSplineLinear(_l, _ebin[1:], _z.T, **fmt)
     return wbeam
-    
+
+def get_psf_ref(psf_file):
+    f = open(psf_file, 'r')
+    _e, _ang = [], []
+    for line in f:
+        try:
+            e, ang = [float(item) for item in line.split()]
+            _e.append(e)
+            _ang.append(ang)
+        except:
+            pass 
+    fmt = dict(xname='Energy', xunits='MeV', yname='Containment Angle',
+               yunits='deg')
+    psf = xInterpolatedUnivariateSplineLinear(np.array(_e), np.array(_ang),\
+                                                  **fmt)
+    return psf
+
 def king_function(_x, _s, _g):
-    """                                                                           
+    """                                
     """
     K = (1./(2*np.pi*_s))*(1. - 1./_g)*(1. + (1/(2*_g))*(_x**2/_s**2))**(-_g)
     return K
 
-def get_psf_onaxis(psf_file, evtype):
+def get_psf_sinth(psf_file):
     """
     """
-    if '_PSF' in os.path.basename(psf_file):
-        hdu_list = pf.open(psf_file)
-        hdu_list.info()
-        _data = hdu_list['RPSF_%s'%evtype].data
-        _y = 0.5*(_data.field('ENERG_LO') + _data.field('ENERG_HI'))[0]
-        _x = 0.5*(_data.field('CTHETA_LO') + _data.field('CTHETA_HI'))[0]
-        _ncore = _data.field('NCORE')[0]
-        _ntail = _data.field('NTAIL')[0]
-        _score = data.field('SCORE')[0]
-        _stail = data.field('STAIL')[0]
-        _gcore = data.field('GCORE')[0]
-        _gtail = data.field('GTAIL')[0]
-        #...
-        _z = _data.field('MEAN')[0]
-        title=os.path.basename(psf_file).replace('_PSF.fits','_%s.png'%evtype)
-        fmt = dict(xname='Off-axis angle', xunits='', yname='Energy',
-                   yunits='MeV', zname='PSF')
-        psf_th_e = xInterpolatedBivariateSplineLinear(_x, _y, _z, **fmt)
-        plt.figure()
-        psf_th_e.plot(show=False)
-        overlay_tag()
-        save_current_figure(title, clear=False)
-        psf_e = psf_th_e.vslice(1.)
-        return psf_e
+    hdu_list = pf.open(psf_file)
+    _th = np.radians(hdu_list['THETA'].data.field('Theta'))
+    _en = hdu_list['PSF'].data.field('ENERGY')
+    _psf = hdu_list['PSF'].data.field('PSF')*np.sin(_th)
+    fmt = dict(yname='Theta', yunits='rad', xname='Energy',
+               xunits='MeV', zname='PSF')
+    psf_th_e = xInterpolatedBivariateSplineLinear(_en, _th, _psf, **fmt)
+    return psf_th_e
 
 def wbeam_parse(wbeam_file):
     f = open(wbeam_file, 'r')
@@ -118,6 +118,13 @@ def wbeam_parse(wbeam_file):
 def main():
     """Test module
     """
+    psf_file = 'prova.fits'
+    psf = get_psf_sinth(psf_file)
+    #psf.plot(logz=True)
+    #save_current_figure('prova.png', clear=False)
+    psf_1GeV = psf.vslice(1000)
+    print psf_1GeV.integral(0, 30)*2*np.pi
+    psf_1GeV.plot()
     wb_file = 'config/ascii/Wbeam_p8_clean_v6.txt'
     wb = get_wbeam(wb_file)
     plt.figure(figsize=(10, 7), dpi=80)

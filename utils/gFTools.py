@@ -26,24 +26,23 @@ def get_cl_param(cl_param_file):
     """
     logger.info('loading parameters from %s'%cl_param_file)
     f = open(cl_param_file, 'r')
-    _emin, _emax, _emean, _f, _ferr, _cn, fsky = [], [], [], [], [], \
+    _emin, _emax, _emean, _f, _ferr, _cn, _fsky = [], [], [], [], [], \
         [], []
     for line in f:
-        if 'E_MIN' in line:
-            _emin = np.array([float(i) for i in line.split()[1:]])
-        if 'E_MAX' in line:
-            _emax = np.array([float(i) for i in line.split()[1:]])
-        if 'E_MEAN' in line:
-            _emean = np.array([float(i) for i in line.split()[1:]])
-        if 'F_MEAN' in line:
-            _f = np.array([float(i) for i in line.split()[1:]])
-        if 'FERR_MEAN' in line:
-            _ferr = np.array([float(i) for i in line.split()[1:]])
-        if 'CN_MEAN' in line:
-            _cn = np.array([float(i) for i in line.split()[1:]])
-        if 'FSKY' in line:
-            fsky = float(line.split()[1])
-    return _emin, _emax, _emean, _f, _ferr, _cn, fsky
+        try:
+            emin, emax, emean, f, ferr, cn, fsky = [float(item) for item in \
+                                                        line.split()]
+            _emin.append(emin)
+            _emax.append(emax)
+            _emean.append(emean)
+            _f.append(f)
+            _ferr.append(ferr)
+            _cn.append(cn)
+            _fsky.append(fsky)
+        except:
+            pass
+    return np.array(_emin), np.array(_emax), np.array(_emean), np.array(_f), \
+        np.array(_ferr), np.array(_cn), np.array(_fsky)
         
 def get_cn_from_txt(txt_file):
     """Returns a list with the white noise values
@@ -63,7 +62,7 @@ def get_cn_from_txt(txt_file):
     f.close()
     return _cn
 
-def get_energy_from_txt(txt_file, get_binning=False, mean='log'):
+def get_energy_from_txt(txt_file, get_binning=False, mean='log', ):
     """Returns a list with the center values of the energy bins
 
        txt_file: str
@@ -93,7 +92,7 @@ def get_energy_from_txt(txt_file, get_binning=False, mean='log'):
         return np.array(emean), np.array(_emin), np.array(_emax)
     return np.array(_emin), np.array(_emax), np.array(emean)
 
-def get_energy_from_fits(fits_file, mean='log'):
+def get_energy_from_fits(fits_file, minbinnum=0, maxbinnum=100 ,mean='log'):
     """Returns a list with the center values of the energy bins
 
        fits_file: str
@@ -105,8 +104,8 @@ def get_energy_from_fits(fits_file, mean='log'):
     """
     f = pf.open(fits_file)
     ebounds = f[2].data
-    _emin = ebounds['E_MIN']
-    _emax = ebounds['E_MAX']
+    _emin = ebounds['E_MIN'][minbinnum:maxbinnum]/1000
+    _emax = ebounds['E_MAX'][minbinnum:maxbinnum]/1000
     emean = []        
     if mean == 'log':
         for emin, emax in zip(_emin, _emax):

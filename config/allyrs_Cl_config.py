@@ -15,5 +15,7 @@ from GRATools import GRATOOLS_OUT
 
 
 IN_LABEL = 'Allyrs_UCV_t56' #the label of the files to be considered
+BINNING_LABEL = '13bins'
 OUT_LABEL = IN_LABEL
 WBEAM_FILE = 'config/ascii/Wbeam_p8_clean_v6.txt'
+PSF_REF_FILE = 'config/ascii/PSF_UCV_PSF1.txt'

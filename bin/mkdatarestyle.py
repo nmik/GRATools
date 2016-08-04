@@ -60,9 +60,10 @@ def mkRestyle(**kwargs):
     out_label = data.OUT_LABEL
     binning_label = data.BINNING_LABEL
     in_labels_list = data.IN_LABELS_LIST
-    #nbins = data.MICRO_NBINS
     new_txt_name = os.path.join(GRATOOLS_OUT, '%s_%s_parameters.txt' \
                                     %(out_label, binning_label))
+    if os.path.exists(new_txt_name):
+        new_txt_name = new_txt_name.replace('.txt','_2.txt')
     new_txt = open(new_txt_name,'w')
     new_txt.write('# \t E_MIN \t E_MAX \t E_MEAN \t F_MEAN \t FERR_MEAN \t CN \t FSKY \n')
     for minb, maxb in macro_bins:
@@ -95,7 +96,6 @@ def mkRestyle(**kwargs):
         for t in range(1, len(in_labels_list)):
             all_counts = all_counts + count_map[t]
             all_exps = all_exps + exposure_map[t]
-        print len(all_counts), len(all_exps)
         logger.info('Computing the flux for each micro energy bin...')
         flux_map, exp_mean_map = [], []
         nside = data.NSIDE
@@ -108,8 +108,6 @@ def mkRestyle(**kwargs):
         #now I have finelly gridded (in energy) summed in time fluxes
         logger.info('Rebinning...')
         logger.info('Merging fluxes from %.2f to %.2f MeV' %(E_MIN, E_MAX))
-        print 'E_MIN, E_MAX = ', E_MIN, E_MAX
-        print 'E_MEAN = ', E_MEAN
         macro_flux = flux_map[0]
         macro_fluxerr = (emean[0]/emean[0])**(-gamma)/(exp_mean_map[0])**2
         CN = np.average(all_counts[0]/(exp_mean_map[0])**2)/sr
@@ -120,7 +118,6 @@ def mkRestyle(**kwargs):
             CN = CN + np.average(all_counts[b]/(exp_mean_map[b])**2)/sr
         logger.info('CN (white noise) term = %e'%CN)
         macro_fluxerr = np.sqrt(all_counts[0]*macro_fluxerr)/sr
-        print 'CN = ', CN
 
         bad_pix = []
         if kwargs['srcmask'] == True:
@@ -157,7 +154,6 @@ def mkRestyle(**kwargs):
         FSKY = float(len(macro_flux[_index]))/float(len(macro_flux))
         logger.info('Fsky = %.3f'%FSKY)
         print 'F_MEAN, FERR_MEAN = ', F_MEAN, FERR_MEAN
-        print 'FSKY = ', FSKY
 
         new_txt.write('%s \t %s \t %s \t %s \t %s \t %s \t %s \n' \
                           %(E_MIN, E_MAX, E_MEAN, F_MEAN, FERR_MEAN, CN, FSKY))
