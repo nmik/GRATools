@@ -82,50 +82,36 @@ def mkCl(**kwargs):
                                      %(in_label, binning_label))
     from GRATools.utils.gFTools import get_cl_param
     _emin, _emax, _emean, _f, _ferr, _cn, _fsky = get_cl_param(cl_param_file)
-    psf_ref_file = os.path.join(GRATOOLS_CONFIG, 'ascii/PSF_UCV_PSF1.txt')
-    from GRATools.utils.gWindowFunc import get_psf_ref
-    psf_ref = get_psf_ref(psf_ref_file)
-    cl_txt = open(os.path.join(GRATOOLS_OUT, '%s_cls.txt'%out_label), 'w')
+    cl_txt = open(os.path.join(GRATOOLS_OUT, '%s_%s_cls.txt' \
+                                   %(out_label, binning_label)), 'w')
     for i, (emin, emax) in enumerate(zip(_emin, _emax)):
         logger.info('Considering bin %.2f - %.2f ...'%(emin, emax))
-        cl_txt.write('#\t %.2f - %.2f\n'%(emin, emax))
         gamma = data.WEIGHT_SPEC_INDEX
         Im = (1/(1-gamma))*(emax**(1-gamma)-emin**(1-gamma))/(emax-emin)
         eweightedmean = np.power(1/Im, 1/gamma)
-        psf_en = psf_ref(eweightedmean)
-        logger.info('Enegry = %i -> PSF = %.2f'%(eweightedmean, psf_en))
-        l_max = 2*(np.pi/np.radians(psf_en))
+        cl_txt.write('ENERGY\t %.2f %.2f %.2f\n'%(emin, emax, eweightedmean))
+        l_max= 1000
         _l = np.arange(l_max)
-        logger.info('Truncating l at %i' %l_max)
         wb_en = wb.hslice(eweightedmean)(_l)
         flux_map_name = in_label+'_flux_%i-%i.fits'%(emin, emax)
         flux_map = hp.read_map(os.path.join(GRATOOLS_OUT_FLUX, flux_map_name))
         nside = hp.npix2nside(len(flux_map))
-        wpix = hp.sphtfunc.pixwin(nside)[:l_max+1]
-        _cl = hp.sphtfunc.anafast(flux_map, lmax=l_max, alm=False, pol=False)
+        wpix = hp.sphtfunc.pixwin(nside)[:l_max]
+        cn_fit = np.average(hp.sphtfunc.anafast(flux_map)[-100:-1])/99
+        cn = _cn[i] #cn_fit/_fsky[i] #(_cn[i] + cn_fit) / 2
+        _cl = hp.sphtfunc.anafast(flux_map, lmax=l_max-1, alm=False, pol=False)
         wl = wb_en*wpix
-        _cl_err = _cl/10
-        #plt.errorbar(_l[:l_max+1], _cl/_fsky[i]-_cn[i], fmt='o', markersize=3, \
-        #             elinewidth=1, xerr=np.array([0.5]*len(_l[:l_max+1])),\
-        #             yerr=_cl_err, color='red')
-        _cl = (_cl/_fsky[i] - _cn[i])/(wl**2)
+        _cl = (_cl/_fsky[i] - cn)/(wl**2)
         cl_txt.write('Cl\t%s\n'%str(list(_cl)).replace('[',''). \
                          replace(']','').replace(', ', ' '))
-        _cl_err = np.sqrt(2./((2*_l+1)*_fsky[i]))*(_cl+(_cn[i]/wl**2))
+        _cl_err = np.sqrt(2./((2*_l+1)*_fsky[i]))*(_cl+(cn/wl**2))
         cl_txt.write('Cl_ERR\t%s\n\n'%str(list(_cl_err)).replace('[',''). \
                          replace(']','').replace(', ', ' '))
-        #plt.errorbar(_l, _cl, fmt='o', markersize=3, \
-        #             elinewidth=1, xerr=np.array([0.5]*len(_l[:l_max+1])),\
-        #             yerr=_cl_err, color='green')
-        #plt.xlabel('$l$')
-        #plt.ylabel('$C_{l}$')
-        #plt.ylim(-1e-16, 1e-16)
-        #plt.ylim(-1e-14, 1e-14)
-        #plt.xlim(50, l_max+1)
-        #plt.xscale('log')
-        #plt.yscale('log')
-        #plt.show()
     cl_txt.close()
+    logger.info('Created %s'%(os.path.join(GRATOOLS_OUT, '%s_%s_cls.txt' \
+                                               %(out_label, binning_label))))
+
+
 
 if __name__ == '__main__':
     args = PARSER.parse_args()
