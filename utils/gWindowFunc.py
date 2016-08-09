@@ -211,7 +211,7 @@ def main():
                       'ntheta': 300}
         from GRATools.utils.ScienceTools_ import gtpsf
         gtpsf(dict_gtpsf)
-        _l =  _l = np.arange(0, 1000, 4)
+        _l = np.arange(0, 1000, 4)
         psf = get_psf(psf_file)
         if not os.path.exists(out_wbeam_txt):
             wb = build_wbeam(psf, _l, out_wbeam_txt)
