@@ -11,9 +11,30 @@
 #------------------------------------------------------------------------------#
 
 import os
-from GRATools import GRATOOLS_OUT
+from GRATools import GRATOOLS_OUT, FT_DATA_FOLDER
 
+"""BEAM WINDOW FUNCTION VARIABLES
+"""
+LTCUBE = os.path.join(FT_DATA_FOLDER, \
+                      'output/output_gtltcube/Allyrs_filtered_gti_ltcube.fits')
+IRFS ='P8R2_ULTRACLEANVETO_V6'
+EVTYPE = 56
+OUT_W_LABEL = '%s_%i'%(IRFS, EVTYPE)
+PSF_FILE = os.path.join(GRATOOLS_OUT, 'psf_%s.fits'%OUT_W_LABEL)
+DICT_GTPSF = {'expcube': LTCUBE,
+              'outfile': PSF_FILE,
+              'irfs': IRFS,
+              'evtype': EVTYPE,
+              'ra': 45,
+              'dec': 45,
+              'emin': 500,
+              'emax': 600000,
+              'nenergies': 10,
+              'thetamax': 30,
+              'ntheta': 300}
 
+"""Cl VARIABLES
+"""
 IN_LABEL = 'Allyrs_UCV_t56' #the label of the files to be considered
 BINNING_LABEL = '13bins'
 OUT_LABEL = IN_LABEL
