@@ -155,7 +155,7 @@ def mkRestyle(**kwargs):
         logger.info('Fsky = %.3f'%FSKY)
         print 'F_MEAN, FERR_MEAN = ', F_MEAN, FERR_MEAN
 
-        new_txt.write('%s \t %s \t %s \t %s \t %s \t %s \t %s \n' \
+        new_txt.write('%.2f \t %.2f \t %.2f \t %f \t %f \t %f \t %f \n' \
                           %(E_MIN, E_MAX, E_MEAN, F_MEAN, FERR_MEAN, CN, FSKY))
     new_txt.close()
     logger.info('Created %s' %os.path.join(GRATOOLS_OUT, '%s_%s_parameters.txt'\
