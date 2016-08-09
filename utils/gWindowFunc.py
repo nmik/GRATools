@@ -13,38 +13,70 @@
 import os
 import numpy as np
 import pyfits as pf
+import healpy as hp
 import scipy.special as sp
+from GRATools.utils.logging_ import logger
 from GRATools.utils.matplotlib_ import pyplot as plt
 from GRATools.utils.matplotlib_ import overlay_tag, save_current_figure
 from GRATools.utils.gSpline import xInterpolatedBivariateSplineLinear
 from GRATools.utils.gSpline import xInterpolatedUnivariateSplineLinear
 
 
-def Pl(l, _x):
-    """return an array of Pl values correspoding to a given x array
+def get_pl_vs_th(l, _costh):
+    """return an array of Pl values correspoding to a given _costh array
     """
-    _pl = sp.legendre(l)(_x)
-    return _pl
-
-def get_pl_vs_th(l, _th):
-    """
-    """
-    _pl = Pl(l, _th)
-    fmt = dict(xname='cos(th)', xunits='', yname='Pl(cos(th))',
+    _pl_th = sp.legendre(l)(_costh)
+    fmt = dict(xname='th', xunits='rad', yname='Pl(cos(th))',
                yunits='')
-    pl_th = xInterpolatedUnivariateSplineLinear(_th, _pl, **fmt)
-    return pl_th
+    return _pl_th
 
-def get_wbeam(wb_file):
-    f = open(wb_file)
-    _ebin, _l, _e1, _e2, _e3, _e4, _e5, _e6, _e7, _e8 = wbeam_parse(wb_file)
-    _z = np.array([_e2, _e3, _e4, _e5, _e6, _e7, _e8])
+def build_wbeam(psf, _l, out_file):
+    """Calculate the Wbeam(l, E) and return a bivariate slpine.
+    """
+    out_txt = open(out_file, 'w')
+    _en = psf.x
+    _wb = []
+    energy = str(list(_en)).replace('[','').replace(']','').replace(', ', ' ')
+    out_txt.write('l\t%s\n'%energy)
+    for e in _en:
+        wb_e = np.array([])
+        psf_th = psf.vslice(e)
+        for l in _l:
+            pl_th = get_pl_vs_th(l, np.cos(psf_th.x))
+            fmt = dict(xname='th', xunits='rad', yname='convolution', \
+                           yunits='MeV')
+            _conv = xInterpolatedUnivariateSplineLinear(psf_th.x, \
+                                    np.sin(psf_th.x)*psf_th.y*pl_th, **fmt)
+            wb_e_l = min(1., 2*np.pi*(_conv.integral(np.amin(psf_th.x), \
+                                                         np.amax(psf_th.x))))
+            print 'Wbeam(%i, %.2f)'%(l, e), wb_e_l
+            wb_e = np.append(wb_e, [wb_e_l])
+        _wb.append(wb_e)
+    _wb = np.array(_wb)
     fmt = dict(xname='$l$', xunits='', yname='Energy',
                    yunits='MeV', zname='W$_{beam}$(E,$l$)')
-    wbeam = xInterpolatedBivariateSplineLinear(_l, _ebin[1:], _z.T, **fmt)
+    wbeam = xInterpolatedBivariateSplineLinear(_l, _en, _wb.T, **fmt)
+    for i, l in enumerate(_l):
+        wb = str(list(_wb.T[i])).replace('[','').replace(']','').\
+            replace(', ', ' ')
+        out_txt.write('%i\t%s\n'%(l, wb))
+    return wbeam
+
+def get_wbeam(wb_file):
+    """Retrive the bivariate spline of the Wbeam function if a 
+       file has been created
+    """
+    _ebin, _l, _e1, _e2, _e3, _e4, _e5, _e6, _e7, _e8, _e9, _e10 = \
+        wbeam_parse(wb_file)
+    _z = np.array([_e1, _e2, _e3, _e4, _e5, _e6, _e7, _e8, _e9, _e10])
+    fmt = dict(xname='$l$', xunits='', yname='Energy',
+                   yunits='MeV', zname='W$_{beam}$(E,$l$)')
+    wbeam = xInterpolatedBivariateSplineLinear(_l, _ebin, _z.T, **fmt)
     return wbeam
 
 def get_psf_ref(psf_file):
+    """get the published curve of the psf as a func of the energy
+    """
     f = open(psf_file, 'r')
     _e, _ang = [], []
     for line in f:
@@ -60,33 +92,46 @@ def get_psf_ref(psf_file):
                                                   **fmt)
     return psf
 
-def king_function(_x, _s, _g):
-    """                                
-    """
-    K = (1./(2*np.pi*_s))*(1. - 1./_g)*(1. + (1/(2*_g))*(_x**2/_s**2))**(-_g)
-    return K
-
-def get_psf_sinth(psf_file):
-    """
+def get_psf(psf_file, show=False):
+    """Get the PSF from the fits file created by gtpsf
     """
     hdu_list = pf.open(psf_file)
     _th = np.radians(hdu_list['THETA'].data.field('Theta'))
     _en = hdu_list['PSF'].data.field('ENERGY')
-    _psf = hdu_list['PSF'].data.field('PSF')*np.sin(_th)
+    _psf = hdu_list['PSF'].data.field('PSF')
     fmt = dict(yname='Theta', yunits='rad', xname='Energy',
                xunits='MeV', zname='PSF')
     psf_th_e = xInterpolatedBivariateSplineLinear(_en, _th, _psf, **fmt)
+    if show == True:
+        for e in _en:
+            psf_th = psf_th_e.vslice(e)
+            fmt = dict(xname='cos(th)', xunits='', yname='psf[cos(th)]',\
+                           yunits='')
+            _psfxsin = xInterpolatedUnivariateSplineLinear(psf_th.x, \
+                                       psf_th.y*np.sin(psf_th.x), **fmt)
+            plt.plot(np.degrees(psf_th.x), psf_th.y, label='%.2f'%e)
+            print 'INT(E=%.2f) ='%e, 2*np.pi*_psfxsin.integral(0, \
+                                                      np.amax(psf_th.x[:-2]))
+        plt.yscale('log')
+        plt.legend()
+        plt.show()
     return psf_th_e
 
 def wbeam_parse(wbeam_file):
+    """Created to parse the txt file given in output by build_wbeam
+       ATT: it works only with 10 energy bins, if a different nuber of bins 
+       is present in the file, this function have to be modified!!
+    """
     f = open(wbeam_file, 'r')
-    _e, _ebin, _l = [], [], []
-    _e1, _e2, _e3, _e4, _e5, _e6, _e7, _e8 = [], [], [], [], [], [], [], []
+    _e, _l = [], []
+    _e1, _e2, _e3, _e4, _e5 = [], [], [], [], []
+    _e6, _e7, _e8, _e9, _e10 = [], [], [], [], []
     for line in f:
-        if 'k' in line:
+        if 'l' in line:
             _e.extend(float(item) for item in line.split()[1:])
+            
         try:
-            l, e1, e2, e3, e4, e5, e6, e7, e8 = [float(item) for item \
+            l, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10 = [float(item) for item \
                                                      in line.split()]
             _l.append(l)
             _e1.append(e1)
@@ -97,12 +142,11 @@ def wbeam_parse(wbeam_file):
             _e6.append(e6)
             _e7.append(e7)
             _e8.append(e8)
+            _e9.append(e9)
+            _e10.append(e10)
         except:
             pass
-    _e = np.unique(np.array(_e))
-    for emin, emax in zip(_e[:-1], _e[1:]):
-        _ebin.append((emax-emin)/2)
-    _ebin = np.array(_ebin)
+    _e = np.array(_e)
     _l = np.array(_l)
     _e1 = np.array(_e1)
     _e2 = np.array(_e2)
@@ -112,30 +156,73 @@ def wbeam_parse(wbeam_file):
     _e6 = np.array(_e6)
     _e7 = np.array(_e7)
     _e8 = np.array(_e8)
-    return _ebin, _l, _e1, _e2, _e3, _e4, _e5, _e6, _e7, _e8
+    _e9 = np.array(_e9)
+    _e10 = np.array(_e10)
+    return _e, _l, _e1, _e2, _e3, _e4, _e5, _e6, _e7, _e8, _e9, _e10
+
+def IndexToDeclRa(NSIDE, index):
+    """Converts a pixel index to DEC and RA position in the sky
+    """
+    theta, phi = hp.pixelfunc.pix2ang(NSIDE,index)
+    ra = np.degrees(np.pi*2-phi)
+    dec = -np.degrees(theta-np.pi/2.)
+    return dec, ra
 
 
 def main():
     """Test module
     """
-    psf_file = 'prova.fits'
-    psf = get_psf_sinth(psf_file)
-    #psf.plot(logz=True)
-    #save_current_figure('prova.png', clear=False)
-    psf_1GeV = psf.vslice(1000)
-    print psf_1GeV.integral(0, 30)*2*np.pi
-    psf_1GeV.plot()
-    wb_file = 'config/ascii/Wbeam_p8_clean_v6.txt'
-    wb = get_wbeam(wb_file)
+
     plt.figure(figsize=(10, 7), dpi=80)
-    wb.plot(show=False)
-    overlay_tag()
-    save_current_figure('Wbeam_p8_clean_v6.png', clear=False)
+    _l = np.arange(0,10,1)
+    for l in _l:
+        pl_th = get_pl_vs_th(l)
+        plt.plot(pl_th.x, pl_th.y, label='l = %i'%l )
+    plt.legend()
+
+    NSIDE = 1
+    NPIX = hp.nside2npix(NSIDE)
+    iii = np.arange(NPIX)
+    dec, ra = IndexToDeclRa(NSIDE, iii)
+    index = np.where(abs(dec)>10)
+    ra = ra[index]
+    dec = dec[index]
     plt.figure(figsize=(10, 7), dpi=80)
-    wb_1GeV = wb.hslice(1000)
-    wb_1GeV.plot(show=False, logy=True)
-    overlay_tag()
-    save_current_figure('Wbeam_p8_clean_v6_at1GeV.png', clear=False)
+    hp.mollview(iii, title="Mollview image RING")
+    plt.figure(figsize=(10, 7), dpi=80)
+    for i in range(0, len(ra)):
+        print ra[i], dec[i]
+        out_wbeam_txt = 'output/%i_prova.txt'%i
+        psf_file = 'output/%i_prova.fits'%i
+        dict_gtpsf = {'expcube':'/data1/data/FT-files/output/output_gtltcube/Allyrs_filtered_gti_ltcube.fits', 
+                      'outfile': psf_file, 
+                      'irfs': 'P8R2_ULTRACLEANVETO_V6',
+                      'evtype': 56,
+                      'ra': ra[i], 
+                      'dec': dec[i], 
+                      'emin': 500, 
+                      'emax': 600000,
+                      'nenergies': 10, 
+                      'thetamax': 30, 
+                      'ntheta': 300}
+        from GRATools.utils.ScienceTools_ import gtpsf
+        gtpsf(dict_gtpsf)
+        _l =  _l = np.arange(0, 1000, 4)
+        psf = get_psf(psf_file)
+        if not os.path.exists(out_wbeam_txt):
+            wb = build_wbeam(psf, _l, out_wbeam_txt)
+        else:
+            wb = get_wbeam(out_wbeam_txt)
+        wb_1GeV = wb.hslice(1000)
+        wb_1GeV.plot(show=False)
+        wb_50GeV = wb.hslice(50000)
+        wb_50GeV.plot(show=False)
+        wb_100000GeV = wb.hslice(100000)
+        wb_100000GeV.plot(show=False)
+        wb_500000GeV = wb.hslice(500000)
+        wb_500000GeV.plot(show=False)
+    plt.show()
+
 
 if __name__ == '__main__':
     main()
