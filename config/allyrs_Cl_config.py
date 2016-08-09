@@ -20,6 +20,7 @@ LTCUBE = os.path.join(FT_DATA_FOLDER, \
 IRFS ='P8R2_ULTRACLEANVETO_V6'
 EVTYPE = 56
 OUT_W_LABEL = '%s_%i'%(IRFS, EVTYPE)
+WEIGHT_SPEC_INDEX = 2.3
 PSF_FILE = os.path.join(GRATOOLS_OUT, 'psf_%s.fits'%OUT_W_LABEL)
 DICT_GTPSF = {'expcube': LTCUBE,
               'outfile': PSF_FILE,
@@ -38,5 +39,3 @@ DICT_GTPSF = {'expcube': LTCUBE,
 IN_LABEL = 'Allyrs_UCV_t56' #the label of the files to be considered
 BINNING_LABEL = '13bins'
 OUT_LABEL = IN_LABEL
-WBEAM_FILE = 'config/ascii/Wbeam_p8_clean_v6.txt'
-PSF_REF_FILE = 'config/ascii/PSF_UCV_PSF1.txt'
