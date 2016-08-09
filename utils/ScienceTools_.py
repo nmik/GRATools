@@ -170,6 +170,24 @@ def gtexpcube2(label, expcube2_dict):
     logger.info('gtexpcube2 --> CPU time spent: %.2f'%time.clock())
     return OUTFILE
 
+def gtpsf(gtpsf_dict):
+    """
+    """
+    expcube = gtpsf_dict['expcube']
+    outfile = gtpsf_dict['outfile']
+    irfs = gtpsf_dict['irfs']
+    evtype = gtpsf_dict['evtype']
+    ra = gtpsf_dict['ra']
+    dec = gtpsf_dict['dec']
+    emin = gtpsf_dict['emin']
+    emax = gtpsf_dict['emax']
+    nenergies = gtpsf_dict['nenergies']
+    thetamax = gtpsf_dict['thetamax']
+    ntheta = gtpsf_dict['ntheta']
+    os.system('gtpsf expcube=%s outfile=%s irfs=%s evtype=%i ra=%f dec=%f emin=%e emax=%e nenergies=%i thetamax=%i ntheta=%i' \
+                  %(expcube, outfile, irfs, evtype, ra, dec, emin, emax, \
+                        nenergies, thetamax, ntheta))
+
 def main():
     """Test section.
     """
