@@ -34,4 +34,6 @@ python bin/mkdataselection.py --config config/1yr_st_aniso_config.py
 
 python bin/mkdatarestyle.py --config config/restyle_config.py
 
+python bin/mkcl.py --config config/allyrs_Cl_config.py
+
 python bin/mapview.py --infile output/output_flux/Allyrs_UCV_t56_flux_549-1000.fits --udgrade 128
