@@ -41,6 +41,7 @@ def get_cl_param(cl_param_file):
             _fsky.append(fsky)
         except:
             pass
+    f.close()
     return np.array(_emin), np.array(_emax), np.array(_emean), np.array(_f), \
         np.array(_ferr), np.array(_cn), np.array(_fsky)
         

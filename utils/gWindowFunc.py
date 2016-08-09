@@ -60,6 +60,7 @@ def build_wbeam(psf, _l, out_file):
         wb = str(list(_wb.T[i])).replace('[','').replace(']','').\
             replace(', ', ' ')
         out_txt.write('%i\t%s\n'%(l, wb))
+    out_txt.close()
     return wbeam
 
 def get_wbeam(wb_file):
@@ -90,6 +91,7 @@ def get_psf_ref(psf_file):
                yunits='deg')
     psf = xInterpolatedUnivariateSplineLinear(np.array(_e), np.array(_ang),\
                                                   **fmt)
+    f.close()
     return psf
 
 def get_psf(psf_file, show=False):
@@ -102,6 +104,7 @@ def get_psf(psf_file, show=False):
     fmt = dict(yname='Theta', yunits='rad', xname='Energy',
                xunits='MeV', zname='PSF')
     psf_th_e = xInterpolatedBivariateSplineLinear(_en, _th, _psf, **fmt)
+    hdu_list.close()
     if show == True:
         for e in _en:
             psf_th = psf_th_e.vslice(e)
@@ -158,6 +161,7 @@ def wbeam_parse(wbeam_file):
     _e8 = np.array(_e8)
     _e9 = np.array(_e9)
     _e10 = np.array(_e10)
+    f.close()
     return _e, _l, _e1, _e2, _e3, _e4, _e5, _e6, _e7, _e8, _e9, _e10
 
 def IndexToDeclRa(NSIDE, index):
