@@ -25,10 +25,10 @@ def get_cl_param(cl_param_file):
     """
     """
     logger.info('loading parameters from %s'%cl_param_file)
-    f = open(cl_param_file, 'r')
+    ff = open(cl_param_file, 'r')
     _emin, _emax, _emean, _f, _ferr, _cn, _fsky = [], [], [], [], [], \
         [], []
-    for line in f:
+    for line in ff:
         try:
             emin, emax, emean, f, ferr, cn, fsky = [float(item) for item in \
                                                         line.split()]
@@ -41,7 +41,7 @@ def get_cl_param(cl_param_file):
             _fsky.append(fsky)
         except:
             pass
-    f.close()
+    ff.close()
     return np.array(_emin), np.array(_emax), np.array(_emean), np.array(_f), \
         np.array(_ferr), np.array(_cn), np.array(_fsky)
         
