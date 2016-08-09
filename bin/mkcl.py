@@ -30,7 +30,7 @@ __description__ = 'Makes the analysis'
 """
 
 import argparse
-from GRATools import GRATOOLS_OUT
+from GRATools import GRATOOLS_OUT, GRATOOLS_CONFIG
 from GRATools.utils.logging_ import logger, startmsg
 from GRATools.utils.matplotlib_ import pyplot as plt
 from GRATools.utils.matplotlib_ import overlay_tag, save_current_figure
@@ -52,79 +52,80 @@ def get_var_from_file(filename):
 def mkCl(**kwargs):
     """                                      
     """
-    logger.info('Starting Cl analysis...')
     get_var_from_file(kwargs['config'])
+
+    logger.info('Calculating PSF with gtpsf...')
+    dict_gtpsf = data.DICT_GTPSF
+    logger.info('Calculating Wbeam Function...')
+    out_wb_label = data.OUT_W_LABEL
+    out_wb_txt = os.path.join(GRATOOLS_OUT, 'Wbeam_%s.txt'%out_wb_label)
+    if not os.path.exists(out_wb_txt):
+        from GRATools.utils.ScienceTools_ import gtpsf
+        gtpsf(dict_gtpsf)
+        from GRATools.utils.gWindowFunc import get_psf
+        psf_file = data.PSF_FILE
+        psf = get_psf(psf_file)
+        _l = np.arange(0, 1000, 4)
+        from GRATools.utils.gWindowFunc import build_wbeam
+        wb = build_wbeam(psf, _l, out_wb_txt)
+    else:
+        from GRATools.utils.gWindowFunc import get_wbeam
+        wb = get_wbeam(out_wb_txt)
+    wb.plot(show=False)
+    save_current_figure('Wbeam_%s.png'%out_wb_label, clear=True)
+
+    logger.info('Starting Cl analysis...')
     in_label = data.IN_LABEL
     out_label = data.OUT_LABEL
     binning_label = data.BINNING_LABEL
-    wbeam_file = data.WBEAM_FILE
-    psf_ref_file = data.PSF_REF_FILE 
-    from GRATools.utils.gWindowFunc import get_wbeam
-    from GRATools.utils.gWindowFunc import get_psf_ref
-    wb = get_wbeam(wbeam_file)
-    psf = get_psf_ref(psf_ref_file)
-    #psf.plot(show=False, logx=True)
     cl_param_file = os.path.join(GRATOOLS_OUT, '%s_%s_parameters.txt' \
                                      %(in_label, binning_label))
     from GRATools.utils.gFTools import get_cl_param
     _emin, _emax, _emean, _f, _ferr, _cn, _fsky = get_cl_param(cl_param_file)
-    """Here can be moved the part to draw the flux (now in bin/mkanalysis.py)
-    """
-    _cls = []
-    _cls_err = []
-    #plt.figure(figsize=(10, 7), dpi=80)
+    psf_ref_file = os.path.join(GRATOOLS_CONFIG, 'ascii/PSF_UCV_PSF1.txt')
+    from GRATools.utils.gWindowFunc import get_psf_ref
+    psf_ref = get_psf_ref(psf_ref_file)
+    cl_txt = open(os.path.join(GRATOOLS_OUT, '%s_cls.txt'%out_label), 'w')
     for i, (emin, emax) in enumerate(zip(_emin, _emax)):
-        psf_en = psf(_emean[i])
-        logger.info('Enegry = %i -> PSF = %.2f'%(_emean[i], psf_en))
-        l_max = np.pi/np.radians(psf_en)+30
-        _l = np.arange(l_max)
-        #l_max = 2000
-        logger.info('Truncating l at %i' %l_max)
         logger.info('Considering bin %.2f - %.2f ...'%(emin, emax))
-        wb_en = wb.hslice(_emean[i])(_l)
-        #plt.figure(figsize=(10, 7), dpi=80) 
-        #plt.plot(_l, wb_en**2, label='W$_{beam}$$^{2}$')
+        cl_txt.write('#\t %.2f - %.2f\n'%(emin, emax))
+        gamma = data.WEIGHT_SPEC_INDEX
+        Im = (1/(1-gamma))*(emax**(1-gamma)-emin**(1-gamma))/(emax-emin)
+        eweightedmean = np.power(1/Im, 1/gamma)
+        psf_en = psf_ref(eweightedmean)
+        logger.info('Enegry = %i -> PSF = %.2f'%(eweightedmean, psf_en))
+        l_max = 2*(np.pi/np.radians(psf_en))
+        _l = np.arange(l_max)
+        logger.info('Truncating l at %i' %l_max)
+        wb_en = wb.hslice(eweightedmean)(_l)
         flux_map_name = in_label+'_flux_%i-%i.fits'%(emin, emax)
         flux_map = hp.read_map(os.path.join(GRATOOLS_OUT_FLUX, flux_map_name))
         nside = hp.npix2nside(len(flux_map))
         wpix = hp.sphtfunc.pixwin(nside)[:l_max+1]
-        #plt.plot(_l, wpix[:2001]**2, label='W$_{pix}$$^{2}$')
-        #plt.plot(_l, (wb_en*wpix[:2001])**2, \
-        #   label='(W$_{beam}\cdot$W$_{pix}$)$^{2}$')
-        #plt.legend()
-        #plt.xscale('log')
-        #plt.yscale('log')
-        #plt.xlabel('$l$')
-        #overlay_tag(y=0.05)
-        #save_current_figure('Window_funcs_example.png',clear=False)
         _cl = hp.sphtfunc.anafast(flux_map, lmax=l_max, alm=False, pol=False)
-        plt.figure(figsize=(10, 7), dpi=80) 
         wl = wb_en*wpix
         _cl_err = _cl/10
-        #cn_fit = np.average(_cl[1900:1990])
-        print 'cn paper', _cn[i]
-        #print 'cn fit', cn_fit
-        plt.errorbar(_l[:l_max+1], _cl/_fsky[i]-_cn[i], fmt='o', markersize=3, \
-                     elinewidth=1, xerr=np.array([0.5]*len(_l[:l_max+1])),\
-                     yerr=_cl_err, color='red')
-        #print (_cl/_fsky[i])[:100]
+        #plt.errorbar(_l[:l_max+1], _cl/_fsky[i]-_cn[i], fmt='o', markersize=3, \
+        #             elinewidth=1, xerr=np.array([0.5]*len(_l[:l_max+1])),\
+        #             yerr=_cl_err, color='red')
         _cl = (_cl/_fsky[i] - _cn[i])/(wl**2)
-        #_cl = (_cl/_fsky[i] - _cn[i])/(wl**2)
-        #_cls.append(_cl)
+        cl_txt.write('Cl\t%s\n'%str(list(_cl)).replace('[',''). \
+                         replace(']','').replace(', ', ' '))
         _cl_err = np.sqrt(2./((2*_l+1)*_fsky[i]))*(_cl+(_cn[i]/wl**2))
-        #_cls_err.append(_cl_err)
-        print wl[:100]**2
-        plt.errorbar(_l, _cl, fmt='o', markersize=3, \
-                     elinewidth=1, xerr=np.array([0.5]*len(_l[:l_max+1])),\
-                     yerr=_cl_err, color='green')
-        plt.xlabel('$l$')
-        plt.ylabel('$C_{l}$')
-        plt.ylim(-1e-16, 1e-16)
+        cl_txt.write('Cl_ERR\t%s\n\n'%str(list(_cl_err)).replace('[',''). \
+                         replace(']','').replace(', ', ' '))
+        #plt.errorbar(_l, _cl, fmt='o', markersize=3, \
+        #             elinewidth=1, xerr=np.array([0.5]*len(_l[:l_max+1])),\
+        #             yerr=_cl_err, color='green')
+        #plt.xlabel('$l$')
+        #plt.ylabel('$C_{l}$')
+        #plt.ylim(-1e-16, 1e-16)
         #plt.ylim(-1e-14, 1e-14)
-        plt.xlim(50, l_max+1)
+        #plt.xlim(50, l_max+1)
         #plt.xscale('log')
         #plt.yscale('log')
-        plt.show()
+        #plt.show()
+    cl_txt.close()
 
 if __name__ == '__main__':
     args = PARSER.parse_args()
