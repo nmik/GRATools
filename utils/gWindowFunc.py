@@ -176,14 +176,15 @@ def IndexToDeclRa(NSIDE, index):
 def main():
     """Test module
     """
-
+    """
     plt.figure(figsize=(10, 7), dpi=80)
-    _l = np.arange(0,10,1)
+    _l = np.arange(0, 10, 2)
     for l in _l:
-        pl_th = get_pl_vs_th(l)
-        plt.plot(pl_th.x, pl_th.y, label='l = %i'%l )
+        pl_th = get_pl_vs_th(l, np.arange(-1, 1, 0.00001))
+        plt.plot(np.arange(-1, 1, 0.00001), pl_th, '.', label='l = %i'%l)
     plt.legend()
-
+    #plt.show()
+    """
     NSIDE = 1
     NPIX = hp.nside2npix(NSIDE)
     iii = np.arange(NPIX)
@@ -191,6 +192,8 @@ def main():
     index = np.where(abs(dec)>10)
     ra = ra[index]
     dec = dec[index]
+    ra = ra
+    dec = dec
     plt.figure(figsize=(10, 7), dpi=80)
     hp.mollview(iii, title="Mollview image RING")
     plt.figure(figsize=(10, 7), dpi=80)
@@ -217,6 +220,7 @@ def main():
             wb = build_wbeam(psf, _l, out_wbeam_txt)
         else:
             wb = get_wbeam(out_wbeam_txt)
+        """
         wb_1GeV = wb.hslice(1000)
         wb_1GeV.plot(show=False)
         wb_50GeV = wb.hslice(50000)
@@ -226,7 +230,7 @@ def main():
         wb_500000GeV = wb.hslice(500000)
         wb_500000GeV.plot(show=False)
     plt.show()
-
+    """
 
 if __name__ == '__main__':
     main()
