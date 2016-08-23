@@ -105,20 +105,13 @@ def mkRestyle(**kwargs):
             exp_mean_map.append(emap)
             flux_map.append(cmap/emap/sr)
 
-        #now I have finelly gridded (in energy) summed in time fluxes
+        # now I have finelly gridded (in energy) summed in time fluxes
         logger.info('Rebinning...')
         logger.info('Merging fluxes from %.2f to %.2f MeV' %(E_MIN, E_MAX))
         macro_flux = flux_map[0]
         macro_fluxerr = (emean[0]/emean[0])**(-gamma)/(exp_mean_map[0])**2
-        CN = np.average(all_counts[0]/(exp_mean_map[0])**2)/sr
-        for b in range(1, len(flux_map)):
-            macro_flux = macro_flux + flux_map[b]
-            macro_fluxerr = macro_fluxerr + \
-                (emean[b]/emean[0])**(-gamma)/(exp_mean_map[b])**2
-            CN = CN + np.average(all_counts[b]/(exp_mean_map[b])**2)/sr
-        logger.info('CN (white noise) term = %e'%CN)
-        macro_fluxerr = np.sqrt(all_counts[0]*macro_fluxerr)/sr
-
+        _mask = np.where(macro_flux != 1e50)[0]
+        print len(macro_flux), len(_mask)
         bad_pix = []
         if kwargs['srcmask'] == True:
             from GRATools.utils.gMasks import mask_src
@@ -131,6 +124,20 @@ def mkRestyle(**kwargs):
             from GRATools.utils.gMasks import mask_gp
             gp_mask_lat = data.GP_MASK_LAT
             bad_pix += mask_gp(gp_mask_lat, nside)
+        if len(bad_pix) != 0:
+            _mask = np.unique(np.array(bad_pix))
+        print len(bad_pix), len(_mask)
+        CN = np.average(all_counts[0][_mask]/(exp_mean_map[0][_mask])**2)/sr
+        for b in range(1, len(flux_map)):
+            macro_flux = macro_flux + flux_map[b]
+            macro_fluxerr = macro_fluxerr + \
+                (emean[b]/emean[0])**(-gamma)/(exp_mean_map[b])**2
+            CN = CN + np.average(all_counts[b][_mask]/ \
+                                     (exp_mean_map[b][_mask])**2)/sr
+        logger.info('CN (white noise) term = %e'%CN)
+        macro_fluxerr = np.sqrt(all_counts[0]*macro_fluxerr)/sr
+
+        # now mask the rebinned flux and error maps
         for bpix in bad_pix:
             macro_flux[bpix] = hp.UNSEEN
             macro_fluxerr[bpix] = hp.UNSEEN
