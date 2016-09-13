@@ -192,16 +192,18 @@ def main():
     index = np.where(abs(dec)>10)
     ra = ra[index]
     dec = dec[index]
-    ra = ra
-    dec = dec
+    #ra = ra
+    #dec = dec
     plt.figure(figsize=(10, 7), dpi=80)
     hp.mollview(iii, title="Mollview image RING")
     plt.figure(figsize=(10, 7), dpi=80)
+    lab, plots = [], []
     for i in range(0, len(ra)):
         print ra[i], dec[i]
         out_wbeam_txt = 'output/%i_prova.txt'%i
         psf_file = 'output/%i_prova.fits'%i
-        dict_gtpsf = {'expcube':'/data1/data/FT-files/output/output_gtltcube/Allyrs_filtered_gti_ltcube.fits', 
+        dict_gtpsf = {'expcube':'/data1/data/FT-files/output/output_gtltcube'+\
+                          '/Allyrs_filtered_gti_ltcube.fits', 
                       'outfile': psf_file, 
                       'irfs': 'P8R2_ULTRACLEANVETO_V6',
                       'evtype': 56,
@@ -220,17 +222,19 @@ def main():
             wb = build_wbeam(psf, _l, out_wbeam_txt)
         else:
             wb = get_wbeam(out_wbeam_txt)
-        """
         wb_1GeV = wb.hslice(1000)
-        wb_1GeV.plot(show=False)
-        wb_50GeV = wb.hslice(50000)
-        wb_50GeV.plot(show=False)
-        wb_100000GeV = wb.hslice(100000)
-        wb_100000GeV.plot(show=False)
-        wb_500000GeV = wb.hslice(500000)
-        wb_500000GeV.plot(show=False)
+        wl = wb_1GeV.plot(show=False, label='RA:%i, Dec:%i'%(ra[i],dec[i]))
+        #lab.append('%i-%i'%(ra[i],dec[i]))
+        #plots.append(wl)
+        #wb_50GeV = wb.hslice(50000)
+        #wb_50GeV.plot(show=False)
+        #wb_100000GeV = wb.hslice(100000)
+        #wb_100000GeV.plot(show=False)
+        #wb_500000GeV = wb.hslice(500000)
+        #wb_500000GeV.plot(show=False)
+    plt.legend()
     plt.show()
-    """
+
 
 if __name__ == '__main__':
     main()

@@ -45,23 +45,18 @@ def get_cl_param(cl_param_file):
     return np.array(_emin), np.array(_emax), np.array(_emean), np.array(_f), \
         np.array(_ferr), np.array(_cn), np.array(_fsky)
         
-def get_cn_from_txt(txt_file):
-    """Returns a list with the white noise values
-
-       txt_file: str
-           txt file produced in output by mkflux.py application
+def get_crbkg(txt_file, str_evtype):
+    """
     """
     f = open(txt_file, 'r')
-    _cn = []
+    _bkg, _en = [], []
     for line in f:
-        try:
-            cn = [float(item) for item in line.split() if float(item)<1.][0]
-            if type(cn) == float:
-                _cn.append(cn)
-        except:
-            pass
+        if 'I_'+str_evtype in line:
+            _bkg = [float(item) for item in line.split()[1:]]
+        if 'E_'+str_evtype in line:
+            _en = [float(item) for item in line.split()[1:]]
     f.close()
-    return _cn
+    return np.array(_en), np.array(_bkg)
 
 def get_energy_from_txt(txt_file, get_binning=False, mean='log', ):
     """Returns a list with the center values of the energy bins
