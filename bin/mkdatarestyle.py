@@ -44,6 +44,7 @@ PARSER.add_argument('--gpmask', type=ast.literal_eval, choices=[True, False],
                     default=True,
                     help='galactic plain mask activated')
 
+
 def get_var_from_file(filename):
     f = open(filename)
     global data
@@ -111,7 +112,6 @@ def mkRestyle(**kwargs):
         macro_flux = flux_map[0]
         macro_fluxerr = (emean[0]/emean[0])**(-gamma)/(exp_mean_map[0])**2
         _mask = np.where(macro_flux != 1e50)[0]
-        print len(macro_flux), len(_mask)
         bad_pix = []
         if kwargs['srcmask'] == True:
             from GRATools.utils.gMasks import mask_src
@@ -126,14 +126,13 @@ def mkRestyle(**kwargs):
             bad_pix += mask_gp(gp_mask_lat, nside)
         if len(bad_pix) != 0:
             _mask = np.unique(np.array(bad_pix))
-        print len(bad_pix), len(_mask)
-        CN = np.average(all_counts[0][_mask]/(exp_mean_map[0][_mask])**2)/sr
+        CN = np.average(all_counts[0][~_mask]/(exp_mean_map[0][~_mask])**2)/sr
         for b in range(1, len(flux_map)):
             macro_flux = macro_flux + flux_map[b]
             macro_fluxerr = macro_fluxerr + \
                 (emean[b]/emean[0])**(-gamma)/(exp_mean_map[b])**2
-            CN = CN + np.average(all_counts[b][_mask]/ \
-                                     (exp_mean_map[b][_mask])**2)/sr
+            CN = CN + np.average(all_counts[b][~_mask]/ \
+                                     (exp_mean_map[b][~_mask])**2)/sr
         logger.info('CN (white noise) term = %e'%CN)
         macro_fluxerr = np.sqrt(all_counts[0]*macro_fluxerr)/sr
 
@@ -162,7 +161,7 @@ def mkRestyle(**kwargs):
         logger.info('Fsky = %.3f'%FSKY)
         print 'F_MEAN, FERR_MEAN = ', F_MEAN, FERR_MEAN
 
-        new_txt.write('%.2f \t %.2f \t %.2f \t %f \t %f \t %f \t %f \n' \
+        new_txt.write('%.2f \t %.2f \t %.2f \t %e \t %e \t %e \t %f \n' \
                           %(E_MIN, E_MAX, E_MEAN, F_MEAN, FERR_MEAN, CN, FSKY))
     new_txt.close()
     logger.info('Created %s' %os.path.join(GRATOOLS_OUT, '%s_%s_parameters.txt'\

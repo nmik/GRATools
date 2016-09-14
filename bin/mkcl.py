@@ -25,7 +25,6 @@ import pyfits as pf
 __description__ = 'Makes the analysis'
 
 
-
 """Command-line switches.                                                       
 """
 
@@ -65,7 +64,7 @@ def mkCl(**kwargs):
         from GRATools.utils.gWindowFunc import get_psf
         psf_file = data.PSF_FILE
         psf = get_psf(psf_file)
-        _l = np.arange(0, 1000, 4)
+        _l = np.arange(0, 1000)
         from GRATools.utils.gWindowFunc import build_wbeam
         wb = build_wbeam(psf, _l, out_wb_txt)
     else:
@@ -78,6 +77,8 @@ def mkCl(**kwargs):
     in_label = data.IN_LABEL
     out_label = data.OUT_LABEL
     binning_label = data.BINNING_LABEL
+    mask_file = data.MASK_FILE
+    mask = hp.read_map(mask_file)
     cl_param_file = os.path.join(GRATOOLS_OUT, '%s_%s_parameters.txt' \
                                      %(in_label, binning_label))
     from GRATools.utils.gFTools import get_cl_param
@@ -95,16 +96,26 @@ def mkCl(**kwargs):
         wb_en = wb.hslice(eweightedmean)(_l)
         flux_map_name = in_label+'_flux_%i-%i.fits'%(emin, emax)
         flux_map = hp.read_map(os.path.join(GRATOOLS_OUT_FLUX, flux_map_name))
+        flux_map_masked = hp.ma(flux_map)
+        flux_map_masked.mask = np.logical_not(mask)
+        fsky = 1.-(len(np.where(flux_map_masked.filled() == hp.UNSEEN)[0])/\
+                    float(len(flux_map)))
+        print 'fsky = ', fsky
         nside = hp.npix2nside(len(flux_map))
         wpix = hp.sphtfunc.pixwin(nside)[:l_max]
-        cn_fit = np.average(hp.sphtfunc.anafast(flux_map)[-100:-1])/99
-        cn = _cn[i] #cn_fit/_fsky[i] #(_cn[i] + cn_fit) / 2
-        _cl = hp.sphtfunc.anafast(flux_map, lmax=l_max-1, alm=False, pol=False)
+        _cl = hp.sphtfunc.anafast(flux_map_masked.filled(), lmax=l_max-1, \
+                                      iter=5)
+        #_cl = hp.sphtfunc.anafast(flux_map, lmax=l_max-1, iter=5)
+        _cl_fit = hp.sphtfunc.anafast(flux_map_masked.filled(), iter=5)
+        cn_fit = np.average(_cl_fit[-500:-1]/fsky)/len(_cl_fit[-500:-1])
+        print 'cn fit = ', cn_fit
+        cn = cn_fit
+        #cn =_cn[i]
         wl = wb_en*wpix
-        _cl = (_cl/_fsky[i] - cn)/(wl**2)
+        _cl = (_cl/fsky - cn)/(wl**2)
         cl_txt.write('Cl\t%s\n'%str(list(_cl)).replace('[',''). \
                          replace(']','').replace(', ', ' '))
-        _cl_err = np.sqrt(2./((2*_l+1)*_fsky[i]))*(_cl+(cn/wl**2))
+        _cl_err = np.sqrt(2./((2*_l+1)*fsky))*(_cl+(cn/wl**2))
         cl_txt.write('Cl_ERR\t%s\n\n'%str(list(_cl_err)).replace('[',''). \
                          replace(']','').replace(', ', ' '))
     cl_txt.close()
