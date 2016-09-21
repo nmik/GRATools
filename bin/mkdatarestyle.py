@@ -126,12 +126,12 @@ def mkRestyle(**kwargs):
             bad_pix += mask_gp(gp_mask_lat, nside)
         if len(bad_pix) != 0:
             _mask = np.unique(np.array(bad_pix))
-        CN = np.average(all_counts[0][~_mask]/(exp_mean_map[0][~_mask])**2)/sr
+        CN = np.mean(all_counts[0][~_mask]/(exp_mean_map[0][~_mask])**2)/sr
         for b in range(1, len(flux_map)):
             macro_flux = macro_flux + flux_map[b]
             macro_fluxerr = macro_fluxerr + \
                 (emean[b]/emean[0])**(-gamma)/(exp_mean_map[b])**2
-            CN = CN + np.average(all_counts[b][~_mask]/ \
+            CN = CN + np.mean(all_counts[b][~_mask]/ \
                                      (exp_mean_map[b][~_mask])**2)/sr
         logger.info('CN (white noise) term = %e'%CN)
         macro_fluxerr = np.sqrt(all_counts[0]*macro_fluxerr)/sr
