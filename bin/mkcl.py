@@ -99,18 +99,18 @@ def mkCl(**kwargs):
         flux_map_masked = hp.ma(flux_map)
         flux_map_masked.mask = np.logical_not(mask)
         fsky = 1.-(len(np.where(flux_map_masked.filled() == hp.UNSEEN)[0])/\
-                    float(len(flux_map)))
+                       float(len(flux_map)))
         print 'fsky = ', fsky
         nside = hp.npix2nside(len(flux_map))
         wpix = hp.sphtfunc.pixwin(nside)[:l_max]
         _cl = hp.sphtfunc.anafast(flux_map_masked.filled(), lmax=l_max-1, \
                                       iter=5)
-        #_cl = hp.sphtfunc.anafast(flux_map, lmax=l_max-1, iter=5)
-        _cl_fit = hp.sphtfunc.anafast(flux_map_masked.filled(), iter=5)
+        _cl_fit = hp.sphtfunc.anafast(flux_map_masked.filled(), iter=4)
         cn_fit = np.average(_cl_fit[-500:-1]/fsky)/len(_cl_fit[-500:-1])
         print 'cn fit = ', cn_fit
-        cn = cn_fit
-        #cn =_cn[i]
+        #cn = cn_fit
+        print 'cn poisson = ', _cn[i]
+        cn = _cn[i]
         wl = wb_en*wpix
         _cl = (_cl/fsky - cn)/(wl**2)
         cl_txt.write('Cl\t%s\n'%str(list(_cl)).replace('[',''). \
