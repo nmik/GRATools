@@ -36,7 +36,7 @@ DICT_GTPSF = {'expcube': LTCUBE,
 
 """Cl VARIABLES
 """
-IN_LABEL = 'Allyrs_UCV_t0' #the label of the files to be considered
+IN_LABEL = 'Allyrs_UCV_t0_srcmask2' #the label of the files to be considered
 MASK_FILE = os.path.join(GRATOOLS_OUT, 'Mask_src2_gp30.fits')
 BINNING_LABEL = '13bins'
 OUT_LABEL = IN_LABEL
