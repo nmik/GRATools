@@ -21,6 +21,49 @@ import pyfits as pf
 from GRATools import GRATOOLS_OUT
 from GRATools.utils.logging_ import logger, abort
 
+def cp_parse(cp_file):
+    """
+    """
+    logger.info('loading Cp values from %s'%cp_file)
+    ff = open(cp_file, 'r')
+    _emin, _emax, _emean, _cp, _cperr = [], [], [], [], []
+    for line in ff:
+        try:
+            emin, emax, emean, cp, cperr = [float(item) for item in \
+                                                line.split()]
+            _emin.append(emin)
+            _emax.append(emax)
+            _emean.append(emean)
+            _cp.append(cp)
+            _cperr.append(cperr)
+        except:
+            pass
+    ff.close()
+    return np.array(_emin), np.array(_emax),np.array(_emean), \
+        np.array(_cp), np.array(_cperr)
+
+def cl_parse(cl_file):
+    """
+    """
+    cls = []
+    clerrs = []
+    emin, emax, emean = [], [], []
+    f = open(cl_file, 'r')
+    for line in f:
+        if 'ENERGY\t' in line:
+            e1, e2, em = [float(item) for item in line.split()[1:]]
+            emin.append(e1)
+            emax.append(e2)
+            emean.append(em)
+        if 'Cl\t' in line:
+            cl = np.array([float(item) for item in line.split()[1:]])
+            cls.append(cl)
+        if 'Cl_ERR' in line:
+            cl_err = np.array([float(item) for item in line.split()[1:]])
+            clerrs.append(cl_err)
+    f.close()
+    return np.array(emin), np.array(emax), np.array(emean), cls, clerrs
+
 def get_cl_param(cl_param_file):
     """
     """

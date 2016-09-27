@@ -49,7 +49,7 @@ def maps_view(**kwargs):
     if kwargs['field'] == 0:
         healpix_maps = hp.pixelfunc.ud_grade(healpix_maps, nside_out, pess=True)
         hp.mollview(healpix_maps, title=t.replace('.fits',''), \
-                        coord='G')#, hold=True)
+                        coord='G', min=1e-7, max=1e-4, norm='log')#, hold=True)
         
         hp.graticule()
         overlay_tag(color='silver', x=0.45)
@@ -59,7 +59,7 @@ def maps_view(**kwargs):
             healpix_maps = hp.pixelfunc.ud_grade(healpix_maps, nside_out, \
                                                      pess=True)
             hp.mollview(maps, title=t.replace('.fits','_%i'%i), \
-                            coord='G')
+                            coord='G', min=1e-7, max=1e-4, norm='log')
             hp.graticule()
             overlay_tag(color='silver', x=0.05)
             save_current_figure(t.replace('.fits','_%i.png'%i))
