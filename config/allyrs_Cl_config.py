@@ -18,7 +18,7 @@ from GRATools import GRATOOLS_OUT, FT_DATA_FOLDER
 LTCUBE = os.path.join(FT_DATA_FOLDER, \
                     'output/output_gtltcube/Allyrs_filtered_gti_ltcube.fits')
 IRFS ='P8R2_ULTRACLEANVETO_V6'
-EVTYPE = 56
+EVTYPE = 3
 OUT_W_LABEL = '%s_%i'%(IRFS, EVTYPE)
 WEIGHT_SPEC_INDEX = 2.3
 PSF_FILE = os.path.join(GRATOOLS_OUT, 'psf_%s.fits'%OUT_W_LABEL)
@@ -36,7 +36,7 @@ DICT_GTPSF = {'expcube': LTCUBE,
 
 """Cl VARIABLES
 """
-IN_LABEL = 'Allyrs_UCV_t56' #the label of the files to be considered
-MASK_FILE = os.path.join(GRATOOLS_OUT, 'Mask_src1p5_gp30.fits')
+IN_LABEL = 'Allyrs_UCV_t0' #the label of the files to be considered
+MASK_FILE = os.path.join(GRATOOLS_OUT, 'Mask_src2_gp30.fits')
 BINNING_LABEL = '13bins'
-OUT_LABEL = IN_LABEL+'_srcmask1p5'
+OUT_LABEL = IN_LABEL
