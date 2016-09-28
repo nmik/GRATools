@@ -187,7 +187,7 @@ def mergeft(path_to_files, out_file_name, N1week, Nnweek):
     """
     if N1week < 9:
         abort('Invalid number of weeks: the minimun must be > or = to 9')
-    if Nnweek > 397:
+    if Nnweek > 434:
         abort('Invalid number of weeks: the maximum must be < or = to 397')
     outtxtfile = os.path.join(path_to_files, out_file_name)
     if not os.path.exists(outtxtfile):
