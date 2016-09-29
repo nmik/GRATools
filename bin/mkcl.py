@@ -17,6 +17,8 @@
 
 import os
 import imp
+import ast
+import argparse
 import numpy as np
 import healpy as hp
 import pyfits as pf
@@ -28,7 +30,7 @@ __description__ = 'Makes the analysis'
 """Command-line switches.                                                       
 """
 
-import argparse
+
 from GRATools import GRATOOLS_OUT, GRATOOLS_CONFIG
 from GRATools.utils.logging_ import logger, startmsg
 from GRATools.utils.matplotlib_ import pyplot as plt
@@ -41,6 +43,9 @@ PARSER = argparse.ArgumentParser(description=__description__,
                                  formatter_class=formatter)
 PARSER.add_argument('--config', type=str, required=True,
                     help='the input configuration file')
+PARSER.add_argument('--show', type=ast.literal_eval, choices=[True, False],
+                    default=False,
+                    help='True if you want to see the maps')
 
 def get_var_from_file(filename):
     f = open(filename)
@@ -100,6 +105,10 @@ def mkCl(**kwargs):
         flux_map_masked.mask = np.logical_not(mask)
         fsky = 1.-(len(np.where(flux_map_masked.filled() == hp.UNSEEN)[0])/\
                        float(len(flux_map)))
+        if kwargs['show'] == True:
+            hp.mollview(flux_map_masked.filled(), title='f$_{sky}$ = %.3f'%fsky,
+                        min=1e-7, max=1e-4, norm='log')
+            plt.show()
         print 'fsky = ', fsky
         nside = hp.npix2nside(len(flux_map))
         wpix = hp.sphtfunc.pixwin(nside)[:l_max]
