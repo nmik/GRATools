@@ -47,6 +47,23 @@ def ref_igrb_band():
     #plt.yscale('log')
     return legend, label
 
+def ref_cp_band():
+    fsub = open(os.path.join(GRATOOLS_CONFIG,'ascii/cp_sub_band.txt'), 'r')
+    fup = open(os.path.join(GRATOOLS_CONFIG,'ascii/cp_up_band.txt'), 'r')
+    sub_line_x = [float(l.split()[0]) for l in fsub]
+    up_line_x = [float(l.split()[0]) for l in fup]
+    fsub = open(os.path.join(GRATOOLS_CONFIG,'ascii/cp_sub_band.txt'), 'r')
+    fup = open(os.path.join(GRATOOLS_CONFIG,'ascii/cp_up_band.txt'), 'r')
+    sub_line_y = [float(l.split()[1]) for l in fsub]
+    up_line_y = [float(l.split()[1]) for l in fup]
+    cp = plt.fill(up_line_x + sub_line_x[::-1], up_line_y + sub_line_y[::-1], \
+                 color='silver', alpha='0.5')
+    label= 'M. Fornasa et al. 2016'
+    legend = plt.Rectangle((0, 0), 1, 1, fc='silver')
+    #plt.xscale('log')
+    #plt.yscale('log')
+    return legend, label
+
 def main():
     """Test module
     """
