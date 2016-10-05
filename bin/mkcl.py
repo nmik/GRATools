@@ -115,9 +115,8 @@ def mkCl(**kwargs):
         _cl = hp.sphtfunc.anafast(flux_map_masked.filled(), lmax=l_max-1, \
                                       iter=5)
         _cl_fit = hp.sphtfunc.anafast(flux_map_masked.filled(), iter=4)
-        cn_fit = np.average(_cl_fit[-500:-1]/fsky)/len(_cl_fit[-500:-1])
+        cn_fit = np.average(_cl_fit[-500:-100]/fsky)/len(_cl_fit[-500:-100])
         print 'cn fit = ', cn_fit
-        #cn = cn_fit
         print 'cn poisson = ', _cn[i]
         cn = _cn[i]
         wl = wb_en*wpix
