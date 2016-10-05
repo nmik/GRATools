@@ -20,35 +20,37 @@ from GRATools.utils.gFTools import cl_parse
 
 Cl_FILES = [#os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t0_srcmask2_13bins_cls.txt'),
             #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_Rm_srcmask2_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_Rp_srcmask2_13bins_cls.txt')]
+            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_Rp_srcmask2_13bins_cls.txt'),
             #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t1_srcmask2_13bins_cls.txt'),
             #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t2_srcmask2_13bins_cls.txt'),
             #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t4_srcmask2_13bins_cls.txt'),
             #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t32_srcmask2_13bins_cls.txt')
-            #os.path.join(GRATOOLS_OUT, 
-            #             'Allyrs_UCV_t56_srcmask1p5_13bins_cls.txt'),
+            os.path.join(GRATOOLS_OUT, 
+                         'Allyrs_UCV_t56_srcmask1p5_13bins_cls.txt'),
             #os.path.join(GRATOOLS_OUT, 
             #             'Allyrs_UCV_t56_srcmask2_raw_13bins_cls.txt'),
             #os.path.join(GRATOOLS_OUT,
             #             'Allyrs_UCV_t56_srcmask2_rawCn_13bins_cls.txt'),
             os.path.join(GRATOOLS_OUT,
                          'Allyrs_UCV_t56_srcmask2_13bins_cls.txt'),
-            os.path.join(GRATOOLS_OUT, 
-                         'Allyrs_UCV_t56_srcmask2_masknorth_13bins_cls.txt'),
-            os.path.join(GRATOOLS_OUT, 
-                         'Allyrs_UCV_t56_srcmask2_masksouth_13bins_cls.txt')
+            #os.path.join(GRATOOLS_OUT, 
+            #             'Allyrs_UCV_t56_srcmask2_maskeast_13bins_cls.txt'),
+            #os.path.join(GRATOOLS_OUT, 
+            #             'Allyrs_UCV_t56_srcmask2_maskwest_13bins_cls.txt')
             #os.path.join(GRATOOLS_OUT, 
             #             'Allyrs_UCV_t56_srcmask2_cnfit_13bins_cls.txt'),
             #os.path.join(GRATOOLS_OUT, 
             #             'Allyrs_UCV_t56_srcmask2_clraw_13bins_cls.txt')
             ]
-#OUT_LABEL = 'Cl_types_srmask2'
-#OUT_LABEL = 'Cl_t0_Rm-Rp'
+#OUT_LABEL = 'Cl_types_srcmask2'
+#OUT_LABEL = 'Cl_t56_Rm-Rp'
 #OUT_LABEL = 'Cl_t56_srcmask2_raw-Cn-Wbeam'
-OUT_LABEL = 'Cl_t56_north-south'
+OUT_LABEL = 'Cl_t56_srcmask2-1p5'
+#OUT_LABEL = 'Cl_t56_north-south'
+#OUT_LABEL = 'Cl_t56_east-west'
 rebinning = np.unique(np.int64(np.logspace(0, 3, 31)))
 psf_ref_file = os.path.join(GRATOOLS_CONFIG, 'ascii/PSF_UCV_PSF1.txt')
-_l_min = [200, 200, 100, 100, 100, 100, 100, 100, 100, 100, 49, 49, 49]
+_l_min = [100, 100, 100, 100, 100, 100, 49, 49, 49, 49, 49, 49, 49]
 _l_max = [300, 600, 700, 1000, 1000, 1000, 1000, 1000, 1000, 
           1000, 1000, 1000, 1000]
 

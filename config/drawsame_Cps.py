@@ -24,24 +24,28 @@ Cl_FILES = [#os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t0_srcmask2_13bins_cls.txt')
             #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t2_srcmask2_13bins_cls.txt'),
             #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t4_srcmask2_13bins_cls.txt'),
             #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t32_srcmask2_13bins_cls.txt'),
-            os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask2_13bins_cls.txt')
-            #os.path.join(GRATOOLS_OUT, 
-            #             'Allyrs_UCV_t56_srcmask1p5_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 
-            #             'Allyrs_UCV_t56_srcmask2_13bins_cls.txt'),
-            os.path.join(GRATOOLS_OUT, 
-                         'Allyrs_UCV_t56_srcmask2_masknorth_13bins_cls.txt'),
-            os.path.join(GRATOOLS_OUT, 
-                         'Allyrs_UCV_t56_srcmask2_masksouth_13bins_cls.txt')
+            os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask2_13bins_cls.txt'),
+            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_Rm_srcmask2_13bins_cls.txt'),
+            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_Rp_srcmask2_13bins_cls.txt'),
+            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask1p5_13bins_cls.txt')
+            #os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask2_13bins_cls.txt'),
+            #os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask2_maskeast_13bins_cls.txt'),
+            #os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask2_maskwest_13bins_cls.txt')
+            os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask2_masknorth_13bins_cls.txt'),
+            os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask2_masksouth_13bins_cls.txt')
             ]
-#OUT_LABEL = 'Cp_t0-1-32_srcmask2'
 #OUT_LABEL = 'Cp_t56'
+#OUT_LABEL = 'Cp_types_srcmask2'
+#OUT_LABEL = 'Cp_t56_Rm-Rp'
+
 OUT_LABEL = 'Cp_t56_north-south'
+#OUT_LABEL = 'Cp_t56_east-west'
+#OUT_LABEL = 'Cp_t56_srcmask2-1p5'
 
 rebinning = np.unique(np.int64(np.logspace(0, 3, 31)))
 psf_ref_file = os.path.join(GRATOOLS_CONFIG, 'ascii/PSF_UCV_PSF1.txt')
 psf_ref = get_psf_ref(psf_ref_file)
-_l_min = [200, 200, 100, 100, 100, 100, 100, 100, 100, 100, 49, 49, 49]
+_l_min = [100, 100, 100, 100, 100, 100, 49, 49, 49, 49, 49, 49, 49]
 _l_max = [300, 400, 700, 1000, 1000, 1000, 1000, 1000, 1000, 
           1000, 1000, 1000, 1000]
 cps_tocompare, cperrs_tocompare = [], []
@@ -64,7 +68,7 @@ for f in Cl_FILES:
         for bmin, bmax in zip(rebinning[:-1], rebinning[1:]):
             _l_rebin.append(np.sqrt(bmin*bmax))
             clmean = np.average(aps[bmin:bmax])
-            clmeanerr = np.sqrt(np.sum(aps[bmin:bmax]**2))/\
+            clmeanerr = np.sqrt(np.sum(clerrs[i][bmin:bmax]**2))/\
                 np.sqrt(len(aps[bmin:bmax]))
             _cls_rebin.append(clmean)
             _clerrs_rebin.append(clmeanerr)
@@ -76,9 +80,9 @@ for f in Cl_FILES:
                               0, full=False, cov=True)
         logger.info('Cp = %e' %cp)
         cps.append(cp[0])
-        cperrs.append(cpV[0][0])
+        cperrs.append(np.sqrt(cpV[0][0]))
         txt.write('%f\t%f\t%f\t%e\t%e\n' \
-                   %(emin[i]/1e3, emax[i]/1e3, emean[i]/1e3, cp[0],cpV[0][0]))
+                   %(emin[i]/1e3, emax[i]/1e3, emean[i]/1e3, cp[0], np.sqrt(cpV[0][0])))
     cps_tocompare.append(np.array(cps))
     cperrs_tocompare.append(np.array(cperrs))
     logger.info('Created %s' %f.replace('_cls.txt', '_cps.txt'))
@@ -102,8 +106,8 @@ for i, f in enumerate(Cl_FILES):
 plt.xlabel('E [GeV]')
 plt.ylabel('E$^{4}$/$\Delta$E$^{2}$ $\cdot$ C$_{P}$')
 plt.xscale('log')
-plt.yscale('log')
-plt.legend([leg_ref]+leg, [lab_ref]+lab)
+plt.yscale('log', nonposy='clip')
+plt.legend([leg_ref]+leg, [lab_ref]+lab, loc=3)
 
 save_current_figure(OUT_LABEL+'.png')
 #plt.show()
