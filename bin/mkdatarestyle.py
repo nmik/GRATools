@@ -103,6 +103,7 @@ def mkRestyle(**kwargs):
         print len(exp_mean_map),len(exp_mean_map[0]) 
         all_counts, all_exps = count_map[0], exp_mean_map[0]
         for t in range(1, len(in_labels_list)):
+            print t
             all_counts = all_counts + count_map[t]
             all_exps = all_exps + exp_mean_map[t]
         print len(all_exps)
@@ -134,8 +135,7 @@ def mkRestyle(**kwargs):
         logger.info('CN (white noise) term = %e'%CN)
         macro_fluxerr = np.sqrt(all_counts[0]*macro_fluxerr)/sr
 
-        # now mask the rebinned flux and error maps
-        
+        # now mask the rebinned flux and error maps        
         macro_flux_masked = hp.ma(macro_flux)
         macro_fluxerr_masked = hp.ma(macro_fluxerr)
         macro_flux_masked.mask = np.logical_not(mask)
