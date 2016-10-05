@@ -14,6 +14,7 @@
 """
 
 import os
+import ast
 import argparse
 import numpy as np
 import healpy as hp
@@ -35,6 +36,10 @@ PARSER.add_argument('--infile', type=str, required=True,
                     help='input fits file')
 PARSER.add_argument('--udgrade', type=int, default=512,
                     help='')
+PARSER.add_argument('--optimized', type=ast.literal_eval, choices=[True, False],
+                    default=False,
+                    help='set min and max of the map in mollview')
+
 
 def maps_view(**kwargs):
     """Viewer interface for healpix maps
@@ -48,21 +53,37 @@ def maps_view(**kwargs):
     nside_out = kwargs['udgrade']
     if kwargs['field'] == 0:
         healpix_maps = hp.pixelfunc.ud_grade(healpix_maps, nside_out, pess=True)
-        hp.mollview(healpix_maps, title=t.replace('.fits',''), \
-                        coord='G', min=1e-7, max=1e-4, norm='log')#, hold=True)
-        
-        hp.graticule()
-        overlay_tag(color='silver', x=0.45)
-        save_current_figure(t.replace('.fits','.png'))
+        if kwargs['optimized'] == True:
+            logger.info('Optimizing...')
+            hp.mollview(healpix_maps, title=t.replace('.fits',''), \
+                            coord='G', min=1e-7, max=1e-4, norm='log')
+            hp.graticule()
+            overlay_tag(color='silver', x=0.45)
+            save_current_figure(t.replace('.fits','.png'))
+        else:
+            print aaaaaaa
+            hp.mollview(healpix_maps, title=t.replace('.fits',''), \
+                            coord='G')
+            hp.graticule()
+            overlay_tag(color='silver', x=0.45)
+            save_current_figure(t.replace('.fits','.png'))
     else:
         for i, maps in enumerate(healpix_maps):
             healpix_maps = hp.pixelfunc.ud_grade(healpix_maps, nside_out, \
                                                      pess=True)
-            hp.mollview(maps, title=t.replace('.fits','_%i'%i), \
-                            coord='G', min=1e-7, max=1e-4, norm='log')
-            hp.graticule()
-            overlay_tag(color='silver', x=0.05)
-            save_current_figure(t.replace('.fits','_%i.png'%i))
+            if kwargs['optimized'] == True:
+                logger.info('Optimizing...')
+                hp.mollview(maps, title=t.replace('.fits','_%i'%i), \
+                                coord='G', min=1e-7, max=1e-4, norm='log')
+                hp.graticule()
+                overlay_tag(color='silver', x=0.45)
+                save_current_figure(t.replace('.fits','.png'))
+            else:
+                hp.mollview(healpix_maps, title=t.replace('.fits',''), \
+                                coord='G')
+                hp.graticule()
+                overlay_tag(color='silver', x=0.05)
+                save_current_figure(t.replace('.fits','_%i.png'%i))
 
 if __name__ == '__main__':
     args = PARSER.parse_args()
