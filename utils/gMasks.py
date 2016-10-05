@@ -1,4 +1,4 @@
-#!/usr/bin/env python                                                          #
+ #!/usr/bin/env python                                                          #
 #                                                                              #
 # Autor: Michela Negro, University of Torino.                                  #
 # On behalf of the Fermi-LAT Collaboration.                                    #
@@ -123,3 +123,40 @@ def mask_hemi_south(NSIDE):
         if b <= 0:
             BAD_PIX_HEMI_S.append(iii[i])
     return BAD_PIX_HEMI_S
+
+def mask_hemi_east(NSIDE):
+    """Returns the 'bad pixels' in the easthern hemisphere.
+
+       NSIDE: int
+           healpix nside parameter
+    """
+    logger.info('Masking easthern hemisphere...')
+    NPIX = hp.pixelfunc.nside2npix(NSIDE)
+    BAD_PIX_HEMI_E = []
+    iii = range(NPIX)
+    x,y,z = hp.pix2vec(NSIDE,iii)
+    lon,lat = hp.rotator.vec2dir(x,y,z,lonlat=True)
+    for i,b in enumerate(lon):
+        if -180 <= b <= 0:
+            BAD_PIX_HEMI_E.append(iii[i])
+    return BAD_PIX_HEMI_E
+
+def mask_hemi_west(NSIDE):
+    """Returns the 'bad pixels' in the westhern hemisphere.
+
+       NSIDE: int
+           healpix nside parameter
+    """
+    logger.info('Masking westhern hemisphere...')
+    NPIX = hp.pixelfunc.nside2npix(NSIDE)
+    BAD_PIX_HEMI_W = []
+    iii = range(NPIX)
+    x,y,z = hp.pix2vec(NSIDE,iii)
+    lon,lat = hp.rotator.vec2dir(x,y,z,lonlat=True)
+    for i,b in enumerate(lon):
+        if 0 <= b <= 180:
+            BAD_PIX_HEMI_W.append(iii[i])
+    return BAD_PIX_HEMI_W
+
+def mask_paper_p7(NSIDE):
+    pass

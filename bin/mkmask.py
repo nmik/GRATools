@@ -27,7 +27,7 @@ __description__ = 'Computes fluxes'
 """
 import ast
 import argparse
-from GRATools import GRATOOLS_OUT
+from GRATools import GRATOOLS_CONFIG
 from GRATools.utils.logging_ import logger, startmsg
 
 formatter = argparse.ArgumentDefaultsHelpFormatter
@@ -43,10 +43,16 @@ PARSER.add_argument('--gpmask', type=ast.literal_eval, choices=[True, False],
                     help='galactic plain mask activated')
 PARSER.add_argument('--northmask', type=ast.literal_eval, choices=[True, False],
                     default=False,
-                    help='galactic plain mask activated')
+                    help='northern hemisphere mask activated')
 PARSER.add_argument('--southmask', type=ast.literal_eval, choices=[True, False],
                     default=False,
-                    help='galactic plain mask activated')
+                    help='souththern hemisphere mask activated')
+PARSER.add_argument('--eastmask', type=ast.literal_eval, choices=[True, False],
+                    default=False,
+                    help='eastthern hemisphere mask activated')
+PARSER.add_argument('--westmask', type=ast.literal_eval, choices=[True, False],
+                    default=False,
+                    help='westhern hemispheremask activated')
 
 
 def get_var_from_file(filename):
@@ -64,7 +70,7 @@ def mkMask(**kwargs):
     nside = data.NSIDE
     out_label = data.OUT_LABEL
     npix = hp.nside2npix(nside)
-    mask = np.array([1]*npix)
+    mask = np.ones(npix)
     if kwargs['srcmask'] == True:
         from GRATools.utils.gMasks import mask_src
         src_mask_rad = data.SRC_MASK_RAD
@@ -82,9 +88,15 @@ def mkMask(**kwargs):
     if kwargs['southmask'] == True:
         from GRATools.utils.gMasks import mask_hemi_south
         bad_pix += mask_hemi_south(nside) 
+    if kwargs['eastmask'] == True:
+        from GRATools.utils.gMasks import mask_hemi_east
+        bad_pix += mask_hemi_east(nside) 
+    if kwargs['westmask'] == True:
+        from GRATools.utils.gMasks import mask_hemi_west
+        bad_pix += mask_hemi_west(nside) 
     for bpix in np.unique(bad_pix):
         mask[bpix] = 0
-    out_name = os.path.join(GRATOOLS_OUT, out_label+'.fits')
+    out_name = os.path.join(GRATOOLS_CONFIG, 'fits/'+out_label+'.fits')
     hp.write_map(out_name, mask, coord='G')
     logger.info('Created %s' %out_name)
     
