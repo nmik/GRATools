@@ -61,7 +61,6 @@ def maps_view(**kwargs):
             overlay_tag(color='silver', x=0.45)
             save_current_figure(t.replace('.fits','.png'))
         else:
-            print aaaaaaa
             hp.mollview(healpix_maps, title=t.replace('.fits',''), \
                             coord='G')
             hp.graticule()

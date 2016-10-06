@@ -36,10 +36,14 @@ PARSER = argparse.ArgumentParser(description=__description__,
 PARSER.add_argument('--config', type=str, required=True,
                     help='the input configuration file')
 PARSER.add_argument('--srcmask', type=ast.literal_eval, choices=[True, False],
-                    default=True,
+                    default=False,
                     help='sources mask activated')
+PARSER.add_argument('--srcmaskweight', type=ast.literal_eval, 
+                    choices=[True, False],
+                    default=False,
+                    help='Flux-weighted sources mask activated')
 PARSER.add_argument('--gpmask', type=ast.literal_eval, choices=[True, False],
-                    default=True,
+                    default=False,
                     help='galactic plain mask activated')
 PARSER.add_argument('--northmask', type=ast.literal_eval, choices=[True, False],
                     default=False,
@@ -69,6 +73,7 @@ def mkMask(**kwargs):
     bad_pix = []
     nside = data.NSIDE
     out_label = data.OUT_LABEL
+    energy = data.ENERGY
     npix = hp.nside2npix(nside)
     mask = np.ones(npix)
     if kwargs['srcmask'] == True:
@@ -76,10 +81,15 @@ def mkMask(**kwargs):
         src_mask_rad = data.SRC_MASK_RAD
         cat_file = data.SRC_CATALOG
         bad_pix += mask_src(cat_file, src_mask_rad, nside)
+    if kwargs['srcmaskweight'] == True:
+        from GRATools.utils.gMasks import mask_src_weighted
+        src_mask_rad = data.SRC_MASK_RAD
+        cat_file = data.SRC_CATALOG
+        bad_pix += mask_src_weighted(cat_file, energy, nside)
     if kwargs['gpmask'] == True:
         from GRATools.utils.gMasks import mask_gp
         gp_mask_lat = data.GP_MASK_LAT
-        bad_pix += mask_gp(gp_mask_lat, nside)
+        bad_pix += mask_gp(gp_mask_lat, nside)  
     if kwargs['northmask'] == True:
         from GRATools.utils.gMasks import mask_hemi_north
         bad_pix += mask_hemi_north(nside) 
@@ -95,6 +105,8 @@ def mkMask(**kwargs):
     for bpix in np.unique(bad_pix):
         mask[bpix] = 0
     out_name = os.path.join(GRATOOLS_CONFIG, 'fits/'+out_label+'.fits')
+    fsky = 1-(len(np.unique(bad_pix))/float(npix))
+    logger.info('f$_{sky}$ = %.3f'%fsky)
     hp.write_map(out_name, mask, coord='G')
     logger.info('Created %s' %out_name)
     
