@@ -75,9 +75,7 @@ def mkMask(**kwargs):
         from GRATools.utils.gMasks import mask_src
         src_mask_rad = data.SRC_MASK_RAD
         cat_file = data.SRC_CATALOG
-        src_cat = pf.open(cat_file)
-        bad_pix += mask_src(src_cat, src_mask_rad, nside)
-        src_cat.close()
+        bad_pix += mask_src(cat_file, src_mask_rad, nside)
     if kwargs['gpmask'] == True:
         from GRATools.utils.gMasks import mask_gp
         gp_mask_lat = data.GP_MASK_LAT
