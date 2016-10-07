@@ -14,7 +14,7 @@ import os
 from GRATools import FT_DATA_FOLDER
 
 #OUT_LABEL = 'Mask_src2_gp30_maskwest'
-#OUT_LABEL = 'Mask_advanced_524-1000'
+OUT_LABEL = 'Mask_advanced_524-1000'
 #OUT_LABEL = 'Mask_advanced_1000-1737'
 #OUT_LABEL = 'Mask_advanced_1737-2754'
 #OUT_LABEL = 'Mask_advanced_2754-4786'
@@ -26,13 +26,13 @@ from GRATools import FT_DATA_FOLDER
 #OUT_LABEL = 'Mask_advanced_69183-120226'
 #OUT_LABEL = 'Mask_advanced_120226-190546'
 #OUT_LABEL = 'Mask_advanced_190546-331131'
-OUT_LABEL = 'Mask_advanced_331131-575439'
+#OUT_LABEL = 'Mask_advanced_331131-575439'
 
 NSIDE = 512
 SRC_CATALOG = os.path.join(FT_DATA_FOLDER,'catalogs/gll_psc_v16.fit')
 SRC_MASK_RAD = 2 #[deg]
 GP_MASK_LAT = 30.
-ENERGY =  443942.75
+ENERGY = 743.73
 
 """my energy bins:
 

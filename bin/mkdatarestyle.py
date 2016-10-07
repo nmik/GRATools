@@ -64,7 +64,10 @@ def mkRestyle(**kwargs):
         new_txt_name = new_txt_name.replace('.txt','_2.txt')
     new_txt = open(new_txt_name,'w')
     new_txt.write('# \t E_MIN \t E_MAX \t E_MEAN \t F_MEAN \t FERR_MEAN \t CN \t FSKY \n')
-    for minb, maxb in macro_bins:
+    for i, (minb, maxb) in enumerate(macro_bins):
+        mask_file = data.MASK_FILE
+        if type(mask_file) == list:
+            mask_file = mask_file[i]
         maxb = maxb + 1
         logger.info('Considering bins from %i to %i...' %(minb, maxb-1))
         logger.info('Retriving count and exposure maps...')
@@ -100,13 +103,10 @@ def mkRestyle(**kwargs):
                     exp_mean_map.append(np.asarray(emap_mean))
             txt.close()
         logger.info('Summing in time...')
-        print len(exp_mean_map),len(exp_mean_map[0]) 
         all_counts, all_exps = count_map[0], exp_mean_map[0]
         for t in range(1, len(in_labels_list)):
-            print t
             all_counts = all_counts + count_map[t]
             all_exps = all_exps + exp_mean_map[t]
-        print len(all_exps)
         logger.info('Computing the flux for each micro energy bin...')
         flux_map = []
         nside = kwargs['udgrade']
@@ -120,7 +120,6 @@ def mkRestyle(**kwargs):
         logger.info('Merging fluxes from %.2f to %.2f MeV' %(E_MIN, E_MAX))
         macro_flux = flux_map[0]
         macro_fluxerr = (emean[0]/emean[0])**(-gamma)/(all_exps[0])**2
-        mask_file = data.MASK_FILE
         mask = hp.read_map(mask_file)
         _unmask = np.where(mask != 0)[0]
         CN = np.mean(all_counts[0][_unmask]/(all_exps[0][_unmask])**2)/sr

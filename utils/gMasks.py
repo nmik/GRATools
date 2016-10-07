@@ -187,7 +187,7 @@ def mask_src_weighted(cat_file, ENERGY, NSIDE):
     psf_ref = get_psf_ref(psf_ref_file)
     psf_en = psf_ref(ENERGY)
     psf_min, psf_max =  psf_ref.y[5], psf_ref.y[-1] 
-    norm_min, norm_max = 1, 0.7
+    norm_min, norm_max = 1, 0.3
     norm = norm_min + psf_en*((norm_max - norm_min)/(psf_max - psf_min)) -\
         psf_min*((norm_max - norm_min)/(psf_max - psf_min))
     logger.info('Normalization of radii due to energy: %.3f'%norm)
@@ -199,7 +199,14 @@ def mask_src_weighted(cat_file, ENERGY, NSIDE):
         flux_min*((rad_max - rad_min)/(flux_max - flux_min))
     RADrad = np.radians(RADdeg)
     #*****
-    #plt.plot(FLUX, RADdeg, '.')
+    #plt.title('Radius($\phi$)')
+    #plt.plot(FLUX, RADdeg, 'ro', ms=3, alpha=0.75)
+    #plt.plot((1e-12, 1e-5), (2, 2), '-', color='silver', linewidth=1.0)
+    #plt.xlabel('$\phi$')
+    #plt.ylabel('Radius [$\circ$]')
+    #plt.yscale('log')
+    #plt.xscale('log')
+    #plt.ylim(0.7, 6)
     #plt.show()
     #*****
     logger.info('Masking the extended Sources')
