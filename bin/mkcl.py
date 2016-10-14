@@ -75,7 +75,6 @@ def mkCl(**kwargs):
     else:
         from GRATools.utils.gWindowFunc import get_wbeam
         wb = get_wbeam(out_wb_txt)
-    wb.plot(show=False)
     save_current_figure('Wbeam_%s.png'%out_wb_label, clear=True)
 
     logger.info('Starting Cl analysis...')
