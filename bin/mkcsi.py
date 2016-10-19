@@ -22,7 +22,8 @@ import argparse
 import numpy as np
 import healpy as hp
 import pyfits as pf
-from functools import reduce
+from sets import Set
+#from functools import reduce
 import multiprocessing
 
 __description__ = 'Makes the analysis'
@@ -58,22 +59,16 @@ def csi_compute(param):
     """worker function"""
     get_var_from_file(os.path.join(GRATOOLS_CONFIG, 'Csi_config.py'))
     th_bins = data.TH_BINNING
-    i, dI, pixunmask, nside = param
-    diri = hp.pixelfunc.pix2ang(nside, i)
-    veci = hp.rotator.dir2vec(diri)
+    i, veci, dI, pixunmask, nside = param
     dIij_list = [[] for l in range(0, len(th_bins)-1)]
     counts_list = [[] for l in range(0, len(th_bins)-1)]
     for th, (thmin, thmax) in enumerate(zip(th_bins[:-1], th_bins[1:])):
         pixintorad_min = hp.query_disc(nside, veci, thmin)
         pixintorad_max = hp.query_disc(nside, veci, thmax)
-        pixintorad = reduce(np.intersect1d, (pixintorad_min, pixintorad_max, pixunmask))
-        dIij = 0
-        counts = 0
-        for j in pixintorad:
-            dirj = hp.pixelfunc.pix2ang(nside, j)
-            dij = hp.rotator.angdist(diri, dirj)[0]
-            dIij = dIij + dI[i]*dI[j]
-            counts = counts + 1
+        pixintoring = np.setxor1d(pixintorad_max, pixintorad_min)
+        pixintoring_unmask = np.intersect1d(pixintoring, pixunmask)
+        dIij = np.sum(dI[i]*dI[pixintoring_unmask])#_unmask
+        counts = len(pixintoring_unmask)
         dIij_list[th].append(dIij)
         counts_list[th].append(counts)
     return dIij_list, counts_list
@@ -120,7 +115,11 @@ def mkCsi(**kwargs):
             theta.append(th_mean)
         theta = np.array(theta)
         logger.info('Computing Csi...')
-        args = zip(_unmask, [dI]*npix_unmask, [_unmask]*npix_unmask, 
+        diri = hp.pixelfunc.pix2ang(nside, _unmask)
+        veci = hp.rotator.dir2vec(diri)
+        xyz = np.array([(veci[0][i], veci[1][i], veci[2][i]) 
+                        for i in range(0, len(veci[0]))])
+        args = zip(_unmask, xyz, [dI]*npix_unmask, [_unmask]*npix_unmask, 
                    [nside]*npix_unmask)
         a = np.array(p.map(csi_compute, args))
         SUMij_list = a[:,0]   
@@ -136,6 +135,8 @@ def mkCsi(**kwargs):
         csi_txt.write('CSI\t%s\n'%str(list(csi)).replace('[',''). \
                           replace(']','').replace(', ', ' '))
         plt.plot(theta, csi, 'o--')
+        if kwargs['show'] == True:
+            plt.show()
         save_current_figure('csi_th_%d-%d.png'%(emin, emax))
     csi_txt.close()
     p.close()
@@ -144,10 +145,10 @@ def mkCsi(**kwargs):
                                                %(out_label, binning_label))))
 
 def main():
-    nside = 16
+    nside = 256
     x = np.arange(hp.nside2npix(nside))
     f = np.arange(hp.nside2npix(nside))*1e-7
-    m = np.where(x < 2000)[0]
+    m = np.where(x != 0)[0]
     p = multiprocessing.Pool(processes=8)
     n = len(x)
     args = zip(x, [f]*n, [m]*n, [nside]*n)
@@ -166,3 +167,4 @@ if __name__ == '__main__':
     args = PARSER.parse_args()
     startmsg()
     mkCsi(**args.__dict__)
+    #main()
