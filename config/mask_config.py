@@ -14,25 +14,38 @@ import os
 from GRATools import FT_DATA_FOLDER
 
 #OUT_LABEL = 'Mask_src2_gp30_maskwest'
-OUT_LABEL = 'Mask_advanced_524-1000'
-#OUT_LABEL = 'Mask_advanced_1000-1737'
-#OUT_LABEL = 'Mask_advanced_1737-2754'
-#OUT_LABEL = 'Mask_advanced_2754-4786'
-#OUT_LABEL = 'Mask_advanced_4786-8317'
-#OUT_LABEL = 'Mask_advanced_8317-14454'
-#OUT_LABEL = 'Mask_advanced_14454-22908'
-#OUT_LABEL = 'Mask_advanced_22908-39810'
-#OUT_LABEL = 'Mask_advanced_39810-69183'
-#OUT_LABEL = 'Mask_advanced_69183-120226'
-#OUT_LABEL = 'Mask_advanced_120226-190546'
-#OUT_LABEL = 'Mask_advanced_190546-331131'
-#OUT_LABEL = 'Mask_advanced_331131-575439'
+#OUT_LABEL = 'Mask_gp30' 
+OUT_LABEL = 'Mask_advanced-1q_524-1000'
+#OUT_LABEL = 'Mask_advanced-1q_1000-1737'
+#OUT_LABEL = 'Mask_advanced-1q_1737-2754'
+#OUT_LABEL = 'Mask_advanced-1q_2754-4786'
+#OUT_LABEL = 'Mask_advanced-1q_4786-8317'
+#OUT_LABEL = 'Mask_advanced-1q_8317-14454'
+#OUT_LABEL = 'Mask_advanced-1q_14454-22908'
+#OUT_LABEL = 'Mask_advanced-1q_22908-39810'
+#OUT_LABEL = 'Mask_advanced-1q_39810-69183'
+#OUT_LABEL = 'Mask_advanced-1q_69183-120226'
+#OUT_LABEL = 'Mask_advanced-1q_120226-190546'
+#OUT_LABEL = 'Mask_advanced-1q_190546-331131'
+#OUT_LABEL = 'Mask_advanced-1q_331131-575439'
 
 NSIDE = 512
 SRC_CATALOG = os.path.join(FT_DATA_FOLDER,'catalogs/gll_psc_v16.fit')
 SRC_MASK_RAD = 2 #[deg]
 GP_MASK_LAT = 30.
-ENERGY = 743.73
+ENERGY = 743.73 
+#ENERGY = 1340.69
+#ENERGY = 2208.67
+#ENERGY = 3692.56  
+#ENERGY = 6416.93 
+#ENERGY = 11151.34
+#ENERGY = 18370.95
+#ENERGY = 30713.33
+#ENERGY = 53373.66
+#ENERGY = 92752.78
+#ENERGY = 152802.88
+#ENERGY = 255462.38
+#ENERGY = 443942.75
 
 """my energy bins:
 
