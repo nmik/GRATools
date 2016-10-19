@@ -16,13 +16,54 @@
 
   
 import os
+import re
 import numpy as np
 import pyfits as pf
+import healpy as hp
 from GRATools import GRATOOLS_OUT
+from GRATools import GRATOOLS_CONFIG
 from GRATools.utils.logging_ import logger, abort
 
-def cp_parse(cp_file):
+FORE_EN = re.compile('\_\d+\.')
+
+
+def get_foreground_integral_flux_map(fore_files_list, e_min, e_max):
+    """mean_energy: float
+       the mean of the energy bin
     """
+    fore_en = []
+    for f in fore_files_list:
+        m_en = FORE_EN.search(f).group()
+        en = float(m_en.replace('_','').replace('.',''))
+        fore_en.append(en)
+    fore_en = np.array(fore_en)
+    out_name = fore_files_list[0].replace('_%i.fits'%fore_en[0], 
+                                          '_%d-%d.fits'%(e_min, e_max))
+    if os.path.exists(out_name):
+        logger.info('ATT: file %s already exists and returned...'%out_name)
+        fore_map = hp.read_map(out_name)
+        return fore_map
+    else: 
+        logger.info('Computing the integral flux of the foreground model...')
+        logger.info('...between %.2f - %.2f'%(e_min, e_max))
+        fore_e_min = fore_en[np.where(fore_en<e_min)[0][-1]] 
+        fore_e_max = fore_en[np.where(fore_en>e_max)[0][0]] 
+        fore_map1 = hp.read_map(fore_files_list[np.where(fore_en<e_min)[0][-1]])
+        fore_map2 = hp.read_map(fore_files_list[np.where(fore_en>e_max)[0][0]])
+        if not fore_map2.size:
+            fore_map2 = hp.read_map(fore_files_list[np.where(fore_en<e_max)[0][-1]])
+            if not fore_map1.size:
+                fore_map1 = hp.read_map(fore_files_list[-2]])
+                fore_map2 = hp.read_map(fore_files_list[-1]])
+        A = (fore_map2 - fore_map1)/(fore_e_max - fore_e_min)
+        B = fore_map1 - fore_e_min*A
+        #fore_integr = A/2*(e_max**2 - e_min**2) + B*(e_max - e_min)
+        fore_integr = (A*np.sqrt(e_max*e_min) + B)#*(e_max-e_min)
+        hp.write_map(out_name, fore_integr)
+        return fore_integr
+
+def cp_parse(cp_file):
+    """Parsing of the *_cps.txt files
     """
     logger.info('loading Cp values from %s'%cp_file)
     ff = open(cp_file, 'r')
@@ -43,7 +84,7 @@ def cp_parse(cp_file):
         np.array(_cp), np.array(_cperr)
 
 def cl_parse(cl_file):
-    """
+    """Parsing of the *_cls.txt files.
     """
     cls = []
     clerrs = []
@@ -65,7 +106,7 @@ def cl_parse(cl_file):
     return np.array(emin), np.array(emax), np.array(emean), cls, clerrs
 
 def get_cl_param(cl_param_file):
-    """
+    """Parsing of *_parameters.txt files.
     """
     logger.info('loading parameters from %s'%cl_param_file)
     ff = open(cl_param_file, 'r')
@@ -89,7 +130,7 @@ def get_cl_param(cl_param_file):
         np.array(_ferr), np.array(_cn), np.array(_fsky)
         
 def get_crbkg(txt_file, str_evtype):
-    """
+    """Not used
     """
     f = open(txt_file, 'r')
     _bkg, _en = [], []
@@ -206,3 +247,20 @@ def mergeft(path_to_files, out_file_name, N1week, Nnweek):
     logger.info('Created %s...' %outtxtfile)
     return '@'+outtxtfile
     
+def main():
+    fore_files_list = [os.path.join(GRATOOLS_CONFIG, \
+                                        'fits/gll_iem_v06_hp512_523.fits'),
+                       os.path.join(GRATOOLS_CONFIG, \
+                                        'fits/gll_iem_v06_hp512_715.fits'),
+                       os.path.join(GRATOOLS_CONFIG, \
+                                        'fits/gll_iem_v06_hp512_978.fits'),
+                       os.path.join(GRATOOLS_CONFIG, \
+                                        'fits/gll_iem_v06_hp512_1338.fits'),
+                       os.path.join(GRATOOLS_CONFIG, \
+                                        'fits/gll_iem_v06_hp512_1830.fits'),
+                       ]
+    e_min, e_max = 1000.00, 1737.80
+    get_foreground_integral_flux_map(fore_files_list, e_min, e_max)
+
+if __name__ == '__main__':
+    main()
