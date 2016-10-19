@@ -241,6 +241,29 @@ def mask_src_weighted(cat_file, ENERGY, NSIDE):
 
 
 def main():
+    """Simple test unit
+    """
+    from GRATools.utils.gWindowFunc import get_psf_ref
+    psf_ref_file = os.path.join(GRATOOLS_CONFIG, 'ascii/PSF_UCV_PSF1.txt')
+    psf_ref = get_psf_ref(psf_ref_file)
+    energy = np.array([743.73,1340.69,2208.67,3692.56,6416.93,11151.34,
+                       18370.95,30713.33,53373.66,92752.78,152802.88,
+                       255462.38,443942.75])
+    psf_en = psf_ref(energy)
+    psf_min, psf_max =  psf_ref.y[5], psf_ref.y[-1] 
+    norm_min, norm_max = 1, 0.3
+    norm = norm_min + psf_en*((norm_max - norm_min)/(psf_max - psf_min)) -\
+        psf_min*((norm_max - norm_min)/(psf_max - psf_min))
+    plt.title('Normalization Factor')
+    plt.plot(energy, norm, 'ro--', ms=5, alpha=0.75)
+    #plt.plot((1e-12, 1e-5), (2, 2), '-', color='silver', linewidth=1.0)
+    plt.xlabel('Energy [MeV]')
+    plt.ylabel('Normalization factor')
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.ylim(0.09, 2)
+    plt.show()
+    
     nside = 512
     SRC_CATALOG_FILE = os.path.join(FT_DATA_FOLDER,'catalogs/gll_psc_v16.fit')
     bad_pix = mask_src_weighted(SRC_CATALOG_FILE, 10000, nside)
