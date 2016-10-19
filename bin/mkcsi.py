@@ -60,15 +60,16 @@ def csi_compute(param):
     get_var_from_file(os.path.join(GRATOOLS_CONFIG, 'Csi_config.py'))
     th_bins = data.TH_BINNING
     i, veci, dI, pixunmask, nside = param
+    dIi = dI[i]
     dIij_list = [[] for l in range(0, len(th_bins)-1)]
     counts_list = [[] for l in range(0, len(th_bins)-1)]
     for th, (thmin, thmax) in enumerate(zip(th_bins[:-1], th_bins[1:])):
         pixintorad_min = hp.query_disc(nside, veci, thmin)
         pixintorad_max = hp.query_disc(nside, veci, thmax)
         pixintoring = np.setxor1d(pixintorad_max, pixintorad_min)
-        pixintoring_unmask = np.intersect1d(pixintoring, pixunmask)
-        dIij = np.sum(dI[i]*dI[pixintoring_unmask])#_unmask
-        counts = len(pixintoring_unmask)
+        dIj = dI[pixintoring]
+        dIij = np.sum(np.array([dIi*j for j in dIj if j > hp.UNSEEN]))
+        counts = len([j for j in dIj if j > hp.UNSEEN])
         dIij_list[th].append(dIij)
         counts_list[th].append(counts)
     return dIij_list, counts_list
@@ -107,7 +108,7 @@ def mkCsi(**kwargs):
         nside = hp.npix2nside(npix)
         _unmask = np.where(flux_map != hp.UNSEEN)[0]
         npix_unmask = len(_unmask)
-        dI = flux_map[_unmask]-_f[i]
+        dI = flux_map-_f[i]
         th_bins = data.TH_BINNING
         theta = []
         for thmin, thmax in zip(th_bins[:-1], th_bins[1:])[:2]:
