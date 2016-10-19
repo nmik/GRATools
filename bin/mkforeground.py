@@ -47,7 +47,7 @@ def foreground_map_convert(**kwargs):
     frmaps = pf.open(input_file)
     maps_slices = frmaps[0].data
     energy = np.array([x[0] for x in frmaps['ENERGIES'].data])
-    nside = 2048
+    nside = 64#2048
     npix = hp.nside2npix(nside)
     iii = np.arange(npix)
     x,y,z = hp.pix2vec(nside, iii)
@@ -59,8 +59,9 @@ def foreground_map_convert(**kwargs):
     lon_fits = np.append(lon_fits_1, lon_fits[1440:]*nresx-180)#+180
     lat_fits = np.arange(len(maps_slices[0]))
     lat_fits = lat_fits*nresx-90
+    fr_e = []
     for i, en in enumerate(energy):
-        logger.info('Running convertion for energy %.2f...'%en)
+        logger.info('Running map convertion for energy %.2f...'%en)
         frmap = maps_slices[i]
         fmt = dict(xname='$l$', xunits='deg', yname='$b$',
                    yunits='deg', zname='Flux [cm$^{-2}$s$^{-1}$sr$^{-1}$]')
@@ -72,6 +73,7 @@ def foreground_map_convert(**kwargs):
             hp_frmap[i] = frspline((lon_hp[i]+360)%360, lat_hp[i])
         out_name = os.path.basename(input_file).replace('.fits','_hp%i_%d.fits' 
                                                         %(nside_out, en))
+        fr_e.append(hp_frmap[12426])
         out_path = os.path.join(GRATOOLS_CONFIG, 'fits', out_name)
         hp_frmap_out = hp.pixelfunc.ud_grade(hp_frmap, nside_out,  pess=True)
         hp.write_map(out_path, hp_frmap_out, coord='G')
@@ -82,3 +84,28 @@ if __name__ == '__main__':
     args = PARSER.parse_args()
     startmsg()
     foreground_map_convert(**args.__dict__)
+
+
+"""fr_e = np.array(fr_e)
+plt.plot(energy, fr_e, 'o--')
+plt.plot((524.81, 524.81),(-9e-9, 1e-6), '--', color='silver')
+plt.plot((1000.00, 1000.00),(-9e-9, 1e-6), '--', color='silver')
+plt.plot((1737.80, 1737.80),(-9e-9, 1e-6), '--', color='silver')
+plt.plot((2754.23, 2754.23),(-9e-9, 1e-6), '--', color='silver')
+plt.plot((4786.30, 4786.30),(-9e-9, 1e-6), '--', color='silver')
+plt.plot((8317.64, 8317.64),(-9e-9, 1e-6), '--', color='silver')
+plt.plot((14454.40, 14454.40),(-9e-9, 1e-6), '--', color='silver')
+plt.plot((22908.68, 22908.68),(-9e-9, 1e-6), '--', color='silver')
+plt.plot((39810.71, 39810.71),(-9e-9, 1e-6), '--', color='silver')
+plt.plot((69183.09, 69183.09),(-9e-9, 1e-6), '--', color='silver')
+plt.plot((120226.44, 120226.44),(-9e-9, 1e-6), '--', color='silver')
+plt.plot((190546.06, 190546.06),(-9e-9, 1e-6), '--', color='silver')
+plt.plot((331131.12, 331131.12),(-9e-9, 1e-6), '--', color='silver')
+plt.plot((575439.94, 575439.94),(-9e-9, 1e-6), '--', color='silver')
+plt.ylim(-9e-9, 1e-6)
+plt.xlabel('Energy [MeV]')
+plt.ylabel('Flux in a pixel')
+#plt.yscale('log')
+plt.xscale('log')
+plt.show()
+"""
