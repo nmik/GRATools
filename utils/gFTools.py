@@ -53,8 +53,8 @@ def get_foreground_integral_flux_map(fore_files_list, e_min, e_max):
         if not fore_map2.size:
             fore_map2 = hp.read_map(fore_files_list[np.where(fore_en<e_max)[0][-1]])
             if not fore_map1.size:
-                fore_map1 = hp.read_map(fore_files_list[-2]])
-                fore_map2 = hp.read_map(fore_files_list[-1]])
+                fore_map1 = hp.read_map(fore_files_list[-2])
+                fore_map2 = hp.read_map(fore_files_list[-1])
         A = (fore_map2 - fore_map1)/(fore_e_max - fore_e_min)
         B = fore_map1 - fore_e_min*A
         #fore_integr = A/2*(e_max**2 - e_min**2) + B*(e_max - e_min)
