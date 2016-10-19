@@ -47,7 +47,7 @@ def foreground_map_convert(**kwargs):
     frmaps = pf.open(input_file)
     maps_slices = frmaps[0].data
     energy = np.array([x[0] for x in frmaps['ENERGIES'].data])
-    nside = 64#2048
+    nside = 2048
     npix = hp.nside2npix(nside)
     iii = np.arange(npix)
     x,y,z = hp.pix2vec(nside, iii)
@@ -84,28 +84,3 @@ if __name__ == '__main__':
     args = PARSER.parse_args()
     startmsg()
     foreground_map_convert(**args.__dict__)
-
-
-"""fr_e = np.array(fr_e)
-plt.plot(energy, fr_e, 'o--')
-plt.plot((524.81, 524.81),(-9e-9, 1e-6), '--', color='silver')
-plt.plot((1000.00, 1000.00),(-9e-9, 1e-6), '--', color='silver')
-plt.plot((1737.80, 1737.80),(-9e-9, 1e-6), '--', color='silver')
-plt.plot((2754.23, 2754.23),(-9e-9, 1e-6), '--', color='silver')
-plt.plot((4786.30, 4786.30),(-9e-9, 1e-6), '--', color='silver')
-plt.plot((8317.64, 8317.64),(-9e-9, 1e-6), '--', color='silver')
-plt.plot((14454.40, 14454.40),(-9e-9, 1e-6), '--', color='silver')
-plt.plot((22908.68, 22908.68),(-9e-9, 1e-6), '--', color='silver')
-plt.plot((39810.71, 39810.71),(-9e-9, 1e-6), '--', color='silver')
-plt.plot((69183.09, 69183.09),(-9e-9, 1e-6), '--', color='silver')
-plt.plot((120226.44, 120226.44),(-9e-9, 1e-6), '--', color='silver')
-plt.plot((190546.06, 190546.06),(-9e-9, 1e-6), '--', color='silver')
-plt.plot((331131.12, 331131.12),(-9e-9, 1e-6), '--', color='silver')
-plt.plot((575439.94, 575439.94),(-9e-9, 1e-6), '--', color='silver')
-plt.ylim(-9e-9, 1e-6)
-plt.xlabel('Energy [MeV]')
-plt.ylabel('Flux in a pixel')
-#plt.yscale('log')
-plt.xscale('log')
-plt.show()
-"""
