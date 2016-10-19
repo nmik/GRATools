@@ -30,6 +30,7 @@ __description__ = 'Computes fluxes'
 import ast
 import argparse
 from GRATools import GRATOOLS_OUT
+from GRATools import GRATOOLS_CONFIG
 from GRATools.utils.matplotlib_ import pyplot as plt
 from GRATools.utils.logging_ import logger, startmsg
 
@@ -53,6 +54,7 @@ def mkRestyle(**kwargs):
     """
     logger.info('Starting flux analysis...')
     get_var_from_file(kwargs['config'])
+    fore_files = data.FORE_FILES_LIST
     macro_bins = data.MACRO_BINS
     gamma = data.POWER_LOW_INDEX
     out_label = data.OUT_LABEL
@@ -90,6 +92,7 @@ def mkRestyle(**kwargs):
                     emin, emax, emean = get_energy_from_fits(line,
                                                              minbinnum=minb,
                                                              maxbinnum=maxb)
+                    
                     E_MIN, E_MAX = emin[0], emax[-1]
                     E_MEAN = (emax[0] + emin[-1])*0.5
                 if 'gtexpcube2' in line:
@@ -118,22 +121,38 @@ def mkRestyle(**kwargs):
         # now I have finelly gridded (in energy) summed in time fluxes
         logger.info('Rebinning...')
         logger.info('Merging fluxes from %.2f to %.2f MeV' %(E_MIN, E_MAX))
-        macro_flux = flux_map[0]
+        from GRATools.utils.gFTools import get_foreground_integral_flux_map
+        fore_map = get_foreground_integral_flux_map(fore_files,
+                                                    emin[0], emax[0])
+        macro_flux = flux_map[0] - fore_map
         macro_fluxerr = (emean[0]/emean[0])**(-gamma)/(all_exps[0])**2
         mask = hp.read_map(mask_file)
         _unmask = np.where(mask != 0)[0]
         CN = np.mean(all_counts[0][_unmask]/(all_exps[0][_unmask])**2)/sr
         for b in range(1, len(flux_map)):
-            macro_flux = macro_flux + flux_map[b]
+            fore = get_foreground_integral_flux_map(fore_files,
+                                                    emin[b], emax[b])
+            fore_map = fore_map + fore
+            macro_flux = macro_flux + flux_map[b] - fore
             macro_fluxerr = macro_fluxerr + \
                 (emean[b]/emean[0])**(-gamma)/(all_exps[b])**2
             print 'Cn',b , np.mean(all_counts[b][_unmask]/ \
                                      (all_exps[b][_unmask])**2)/sr
             CN = CN + np.mean(all_counts[b][_unmask]/ \
-                                     (all_exps[b][_unmask])**2)/sr
+                                     (all_exps[b][_unmask])**2)/sr            
         logger.info('CN (white noise) term = %e'%CN)
         macro_fluxerr = np.sqrt(all_counts[0]*macro_fluxerr)/sr
-
+        """
+        #now I want to subtract the foregrounds
+        from GRATools.utils.gFTools import get_foreground_integral_flux_map
+        fore_map = get_foreground_integral_flux_map(fore_files,
+                                                    emin[0], emax[0])
+        for e_min, e_max in zip(emin[1:], emax[1:]):
+            fore = get_foreground_integral_flux_map(fore_files, 
+                                                        e_min, e_max)
+            fore_map = fore_map + fore
+        macro_flux = macro_flux - fore_map
+        """
         # now mask the rebinned flux and error maps        
         macro_flux_masked = hp.ma(macro_flux)
         macro_fluxerr_masked = hp.ma(macro_fluxerr)
@@ -150,6 +169,8 @@ def mkRestyle(**kwargs):
         logger.info('Created %s' %out_name_err)
         hp.write_map(out_name, macro_flux_masked, coord='G')
         hp.write_map(out_name_err, macro_fluxerr_masked, coord='G')
+        FORE_MEAN = np.sum(fore_map[_unmask])/len(fore_map[_unmask])
+        logger.info('Mean unmasked Foreground = %e'%FORE_MEAN)
         F_MEAN = np.sum(macro_flux[_unmask])/len(macro_flux[_unmask])
         FERR_MEAN = np.sqrt(np.sum(macro_fluxerr[_unmask]**2))/\
                                    len(macro_flux[_unmask])
