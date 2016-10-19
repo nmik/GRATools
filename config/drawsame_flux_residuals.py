@@ -17,18 +17,24 @@ from GRATools.utils.logging_ import logger, startmsg
 from GRATools.utils.matplotlib_ import pyplot as plt
 from GRATools.utils.matplotlib_ import overlay_tag, save_current_figure
 
-FLUX_REF = os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t0_Rm_13bins_parameters.txt')
+FLUX_REF = os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask2_13bins_parameters.txt')
 #FLUX_REF_LABEL = 'UCV No evtype'
-FLUX_REF_LABEL = 'UCV No evtype Rock-'
-FLUX_FILES = [#os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t0_Rm_13bins_parameters.txt'),
-              os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t0_Rp_13bins_parameters.txt')]
-FLUX_LABELS = ['UCV No evtype Rock+']#, 'UCV No evtype Rock +']                         
-OUT_LABEL = 'Flux_Rm-Rp' 
-#FLUX_FILES = [os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t4_13bins_parameters.txt'),
-#              os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t32_13bins_parameters.txt'),
-#              os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t1_13bins_parameters.txt'),
-#              os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t2_13bins_parameters.txt')]
-#FLUX_LABELS = ['UCV PSF0', 'UCV PSF3', 'UCV FRONT', 'UCV BACK']
+FLUX_REF_LABEL = 'UCV (t56) srcmask2'
+#OUT_LABEL = 'Flux_Rm-Rp' 
+OUT_LABEL = 'Flux_types_srcmask2'
+FLUX_FILES = [#os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask2_13bins_parameters.txt'),
+              #os.path.join(GRATOOLS_OUT, 'Allyrs_SRC_t32_srcmask2_13bins_parameters.txt'),
+              #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask1p5_13bins_parameters.txt'),
+              #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted_13bins_parameters.txt'),
+              #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t0_13bins_parameters.txt'),
+              #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_Rm_13bins_parameters.txt'),
+              #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_Rp_13bins_parameters.txt')
+              os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t4_srcmask2_13bins_parameters.txt'),
+              os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t32_srcmask2_13bins_parameters.txt'),
+              os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t1_srcmask2_13bins_parameters.txt'),
+              os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t2_srcmask2_13bins_parameters.txt')
+              ]
+FLUX_LABELS = ['UCV (t56) PSF0', 'UCV (t56) PSF3', 'UCV (t56) FRONT', 'UCV (t56) BACK']
 #OUT_LABEL = 'Flux_evtypes'
 
 plt.figure(figsize=(10, 7), dpi=80)

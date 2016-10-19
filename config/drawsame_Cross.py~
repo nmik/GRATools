@@ -19,41 +19,14 @@ from GRATools.utils.matplotlib_ import overlay_tag, save_current_figure
 from GRATools.utils.gWindowFunc import get_psf_ref
 from GRATools.utils.gFTools import cl_parse
 
-Cl_FILES = [#os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t0_srcmask2_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t1_srcmask2_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t2_srcmask2_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t4_srcmask2_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t32_srcmask2_13bins_cls.txt'),
-            os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask2_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_SRC_t32_srcmask2_13bins_cls.txt'),
-            os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask1p5_13bins_cls.txt'),
-            os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted-mE_13bins_cls.txt'),
+Cl_FILES = [#os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted-mE_13bins_cls.txt'),
             #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted-mW_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted-mN_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted-mS_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t32_maskweighted_13bins_cls.txt')
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_SRC_t32_maskweighted_13bins_cls.txt')
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_Rm_maskweighted_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_Rp_maskweighted_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask1p5_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted_13bins_cls.txt')
-            #os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask2_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask2_maskeast_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask2_maskwest_13bins_cls.txt')
-            #os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask2_masknorth_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask2_masksouth_13bins_cls.txt')
+            os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted-mN_13bins_cls.txt'),
+            os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted-mS_13bins_cls.txt'),
             ]
-#OUT_LABEL = 'Cp_UCVt56-SRCt32_maskweight'
-#OUT_LABEL = 'Cp_t56_srcmask2-t32_weight'
-#OUT_LABEL = 'Cp_types_srcmask2'
-#OUT_LABEL = 'Cp_t56_maskweight_Rm-Rp'
-#OUT_LABEL = 'Cp_t56_maskweight'
-#OUT_LABEL = 'Cp_t56_north-south'
-#OUT_LABEL = 'Cp_t56_east-west'
-OUT_LABEL = 'Cp_t56_srcmask2-1p5-weight'
-#OUT_LABEL = 'Cp_t56_maskweight_north-south'
-#OUT_LABEL = 'Cp_t56_maskweight_east-west'
+
+OUT_LABEL = 'Cross_t56_maskweight_north-south'
+#OUT_LABEL = 'Cross_t56_maskweight_east-west'
 
 rebinning = np.unique(np.int64(np.logspace(0, 3, 31)))
 psf_ref_file = os.path.join(GRATOOLS_CONFIG, 'ascii/PSF_UCV_PSF1.txt')

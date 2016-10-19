@@ -18,46 +18,16 @@ from GRATools.utils.matplotlib_ import pyplot as plt
 from GRATools.utils.matplotlib_ import overlay_tag, save_current_figure
 from GRATools.utils.gFTools import cl_parse
 
-Cl_FILES = [#os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t0_srcmask2_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_Rm_maskweighted_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_Rp_maskweighted_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t1_srcmask2_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t2_srcmask2_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t4_srcmask2_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t32_srcmask2_13bins_cls.txt'),
-            os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask1p5_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask2_raw_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask2_rawCn_13bins_cls.txt'),
-            os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask2_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_SRC_t32_srcmask2_13bins_cls.txt'),
-            os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted-mE_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted-mW_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted-mN_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted-mS_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t32_maskweighted_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_SRC_t32_maskweighted_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask2_maskeast_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask2_maskwest_13bins_cls.txt')
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask2_cnfit_13bins_cls.txt'),
-            #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask2_clraw_13bins_cls.txt')
+Cl_FILES = [os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted-mE-mW_13bins_cross.txt'),
+            os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted-mN-mS_13bins_cross.txt')
             ]
-#OUT_LABEL = 'Cl_types_srcmask2'
-#OUT_LABEL = 'Cl_t56_maskweight_Rm-Rp'
-#OUT_LABEL = 'Cl_t56_maskweight'
-#OUT_LABEL = 'Cl_UCVt56-SRCt32_maskweight'
-#OUT_LABEL = 'Cl_t56_srcmask2_raw-Cn-Wbeam'
-#OUT_LABEL = 'Cl_t32_srcmask2-weight'
-OUT_LABEL = 'Cl_t56_srcmask2-1p5-weight'
-#OUT_LABEL = 'Cl_t56_north-south'
-#OUT_LABEL = 'Cl_t56_east-west'
-#OUT_LABEL = 'Cl_t56_maskweight_north-south'
-#OUT_LABEL = 'Cl_t56_maskweight_east-west'
+
+OUT_LABEL = 'Cross_t56_maskweight_E-W_N-S'
 
 rebinning = np.unique(np.int64(np.logspace(0, 3, 31)))
 psf_ref_file = os.path.join(GRATOOLS_CONFIG, 'ascii/PSF_UCV_PSF1.txt')
-_l_min = [200, 200, 100, 100, 100, 100, 49, 49, 49, 49, 49, 49, 49]
-_l_max = [300, 400, 700, 1000, 1000, 1000, 1000, 1000, 1000, 
+_l_min = [ 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49]
+_l_max = [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 
           1000, 1000, 1000, 1000]
 
 emin, emax, emean = [], [], []
@@ -72,8 +42,8 @@ psf_ref = get_psf_ref(psf_ref_file)
 ymin, ymax = -1e-15, 1e-15
 for i in range(0, len(cls_tocompare[0])):
     psf_en = psf_ref(emean[i])
-    l_max = _l_max[i]#min(500, 1.9*(np.pi/np.radians(psf_en)))
-    l_min = _l_min[i]#min(60, max(50-i*5,10))
+    l_max = _l_max[i]
+    l_min = _l_min[i]
     plt.figure(figsize=(10, 7), dpi=80)
     for j, f in enumerate(Cl_FILES):
         _l = np.arange(1, len(cls_tocompare[j][i]))
@@ -95,7 +65,7 @@ for i in range(0, len(cls_tocompare[0])):
         _clerrs_rebin = np.array(_clerrs_rebin)
         cp =  np.polyfit(_l_rebin[l_range_fit], _cls_rebin[l_range_fit], 0, 
                          w=1/_clerrs_rebin[l_range_fit])
-        lab = os.path.basename(f).replace('_13bins_cls.txt', '')
+        lab = os.path.basename(f).replace('_13bins_cross.txt', '')
         plt.errorbar(_l_rebin, _cls_rebin, fmt='o', markersize=3, \
                          elinewidth=1, xerr=[xerrL, xerrR], \
                          yerr=_clerrs_rebin, label=lab )

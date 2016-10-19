@@ -19,33 +19,39 @@ from GRATools.utils.matplotlib_ import overlay_tag, save_current_figure
 from GRATools.utils.gWindowFunc import get_psf_ref
 from GRATools.utils.gFTools import cp_parse
 
+#FLUX_REF = os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted_13bins_cps.txt')
 FLUX_REF = os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask2_13bins_cps.txt')
-#FLUX_REF = os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask2_masknorth_13bins_cps.txt')
-FLUX_REF_LABEL = 'UCV (t56) srcmask2'
-#FLUX_REF_LABEL = 'UCV-t56 srcmask2 masknorth'
+#FLUX_REF_LABEL = 'UCV (t56) mask-weighted'
+FLUX_REF_LABEL = 'UCV-t56 srcmask2'
 FLUX_FILES = [#os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t1_srcmask2_13bins_cps.txt'),
               #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t2_srcmask2_13bins_cps.txt'),
               #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t4_srcmask2_13bins_cps.txt'),
               #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t32_srcmask2_13bins_cps.txt'),
               #os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask2_13bins_cps.txt'),
-              #os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask1p5_13bins_cps.txt'),
+              os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_srcmask1p5_13bins_cps.txt'),
+              os.path.join(GRATOOLS_OUT, 'Allyrs_UCV_t56_maskweighted_13bins_cps.txt')
+              #os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_maskweighted-mN_13bins_cps.txt'),
+              #os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_maskweighted-mS_13bins_cps.txt'),
+              #os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_maskweighted-mE_13bins_cps.txt'),
+              #os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_maskweighted-mW_13bins_cps.txt'),
               #os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask2_masknorth_13bins_cps.txt'),
               #os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask2_masksouth_13bins_cps.txt')
-              os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask2_maskeast_13bins_cps.txt'),
-              os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask2_maskwest_13bins_cps.txt')
+              #os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask2_maskeast_13bins_cps.txt'),
+              #os.path.join(GRATOOLS_OUT,'Allyrs_UCV_t56_srcmask2_maskwest_13bins_cps.txt')
               ]
-#FLUX_LABELS = ['UCV (t56) srcmask1p5']                     
-FLUX_LABELS = ['UCV (t56) srcmask2 maskeast', 'UCV (t56) srcmask2 maskwest']
-#FLUX_LABELS = ['UCV (t56) srcmask2 masknorth', 'UCV (t56) srcmask2 masksouth']
-#FLUX_LABELS = ['UCV-FRONT srcmask2',
+FLUX_LABELS = ['UCV (t56) srcmask1p5', 'UCV (t56) mask-weighted']                     
+#FLUX_LABELS = ['UCV (t56) mask-weighted + mask-north', 'UCV (t56) mask-weighted + mask-south']
+#FLUX_LABELS = ['UCV (t56) mask-weighted + mask-east', 'UCV (t56) mask-weighted + mask-west']
+#FLUX_LABELS = ['UCV-FRONT srcmask2', 
 #               'UCV-BACK srcmask2',
 #               'UCV-PSF0 srcmask2', 
 #               'UCV-PSF3 srcmask2',
 #               'UCV-PSF1+2+3 srcmask2']
-#OUT_LABEL = 'Cp_t56_masksrc2-1p5' 
+OUT_LABEL = 'Cp_t56_srcmask2-1p5-weight' 
+#OUT_LABEL = 'Cp_t56_maskweight_all-north-south'
+#OUT_LABEL = 'Cp_t56_maskweight_all-east-west'
 #OUT_LABEL = 'Cp_t56_all-north-south'
-#OUT_LABEL = 'Cp_t56_all-north-south'
-OUT_LABEL = 'Cp_t56_all-east-west'
+#OUT_LABEL = 'Cp_t56_all-east-west'
 #OUT_LABEL = 'Cp_types_srmask2'
 
 plt.figure(figsize=(10, 7), dpi=80)
