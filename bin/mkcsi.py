@@ -59,7 +59,8 @@ def csi_compute(param):
     """worker function"""
     get_var_from_file(os.path.join(GRATOOLS_CONFIG, 'Csi_config.py'))
     th_bins = data.TH_BINNING
-    i, veci, dI, pixunmask, nside = param
+    i, veci, dI, nside = param
+    print i
     dIi = dI[i]
     dIij_list = [[] for l in range(0, len(th_bins)-1)]
     counts_list = [[] for l in range(0, len(th_bins)-1)]
@@ -68,8 +69,11 @@ def csi_compute(param):
         pixintorad_max = hp.query_disc(nside, veci, thmax)
         pixintoring = np.setxor1d(pixintorad_max, pixintorad_min)
         dIj = dI[pixintoring]
-        dIij = np.sum(np.array([dIi*j for j in dIj if j > hp.UNSEEN]))
-        counts = len([j for j in dIj if j > hp.UNSEEN])
+        dIj = dIj[dIj > hp.UNSEEN]
+        dIij = np.sum(dIi*dIj)
+        #dIij = np.sum(np.array([dIi*j for j in dIj if j > hp.UNSEEN]))
+        counts = len(dIj)
+        #counts = len([j for j in dIj if j > hp.UNSEEN])
         dIij_list[th].append(dIij)
         counts_list[th].append(counts)
     return dIij_list, counts_list
@@ -111,7 +115,7 @@ def mkCsi(**kwargs):
         dI = flux_map-_f[i]
         th_bins = data.TH_BINNING
         theta = []
-        for thmin, thmax in zip(th_bins[:-1], th_bins[1:])[:2]:
+        for thmin, thmax in zip(th_bins[:-1], th_bins[1:]):
             th_mean = np.sqrt(thmin*thmax)
             theta.append(th_mean)
         theta = np.array(theta)
@@ -120,7 +124,7 @@ def mkCsi(**kwargs):
         veci = hp.rotator.dir2vec(diri)
         xyz = np.array([(veci[0][i], veci[1][i], veci[2][i]) 
                         for i in range(0, len(veci[0]))])
-        args = zip(_unmask, xyz, [dI]*npix_unmask, [_unmask]*npix_unmask, 
+        args = zip(_unmask, xyz, [dI]*npix_unmask,
                    [nside]*npix_unmask)
         a = np.array(p.map(csi_compute, args))
         SUMij_list = a[:,0]   
@@ -130,7 +134,7 @@ def mkCsi(**kwargs):
         for i, s in enumerate(SUMij_list[0]):
             SUMij_th.append(np.sum(SUMij_list[:, i]))
             SUMf_th.append(np.sum(SUMf_list[:, i]))
-        csi = np.array(SUMij)/np.array(SUMf)
+        csi = np.array(SUMij_th)/np.array(SUMf_th)
         csi_txt.write('THETA\t%s\n'%str(list(theta)).replace('[',''). \
                           replace(']','').replace(', ', ' ')) 
         csi_txt.write('CSI\t%s\n'%str(list(csi)).replace('[',''). \

@@ -37,6 +37,7 @@ DICT_GTPSF = {'expcube': LTCUBE,
 """Csi VARIABLES
 """
 IN_LABEL = 'Allyrs_UCV_t56_maskweighted' 
-TH_BINNING = np.array([0, 0.001, 0.003, 0.008, 0.024, 0.070])
+TH_BINNING = np.array([ 0.001, 0.00160281, 0.002569, 0.00411762, 0.00659975, 
+                        0.01057815, 0.01695476, 0.02717525, 0.04355675, 0.06981317])
 BINNING_LABEL = '13bins'
 OUT_LABEL = IN_LABEL
