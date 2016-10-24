@@ -37,6 +37,7 @@ def get_foreground_integral_flux_map(fore_files_list, e_min, e_max):
         en = float(m_en.replace('_','').replace('.',''))
         fore_en.append(en)
     fore_en = np.array(fore_en)
+    print fore_en
     out_name = fore_files_list[0].replace('_%i.fits'%fore_en[0], 
                                           '_%d-%d.fits'%(e_min, e_max))
     if os.path.exists(out_name):
@@ -46,15 +47,27 @@ def get_foreground_integral_flux_map(fore_files_list, e_min, e_max):
     else: 
         logger.info('Computing the integral flux of the foreground model...')
         logger.info('...between %.2f - %.2f'%(e_min, e_max))
-        fore_e_min = fore_en[np.where(fore_en<e_min)[0][-1]] 
-        fore_e_max = fore_en[np.where(fore_en>e_max)[0][0]] 
-        fore_map1 = hp.read_map(fore_files_list[np.where(fore_en<e_min)[0][-1]])
-        fore_map2 = hp.read_map(fore_files_list[np.where(fore_en>e_max)[0][0]])
-        if not fore_map2.size:
-            fore_map2 = hp.read_map(fore_files_list[np.where(fore_en<e_max)[0][-1]])
-            if not fore_map1.size:
+        #fore_map2 = hp.read_map(fore_files_list[np.where(fore_en>e_max)[0][0]])
+        if not list(np.where(fore_en>e_max)[0]):
+            print 'aaaaa'
+            print np.where(fore_en>e_min)[0]
+            if not list(np.where(fore_en>e_min)[0]):
+                print 'bbbb'
                 fore_map1 = hp.read_map(fore_files_list[-2])
                 fore_map2 = hp.read_map(fore_files_list[-1])
+                fore_e_min = fore_en[-2] 
+                fore_e_max = fore_en[-1]
+            else:
+                fore_map2 = hp.read_map(fore_files_list[np.where(fore_en<e_max)[0][-1]])
+                fore_e_max = fore_en[np.where(fore_en<e_max)[0][-1]] 
+                fore_map1 = hp.read_map(fore_files_list[np.where(fore_en<e_min)[0][-1]])
+                fore_e_min = fore_en[np.where(fore_en<e_min)[0][-1]]
+        else:
+            fore_map1 = hp.read_map(fore_files_list[np.where(fore_en<e_min)[0][-1]])
+            fore_map2 = hp.read_map(fore_files_list[np.where(fore_en>e_max)[0][0]])
+            fore_e_max = fore_en[np.where(fore_en>e_max)[0][0]]
+            fore_e_min = fore_en[np.where(fore_en<e_min)[0][-1]]
+        logger.info('getting foreground between %.2f - %.2f'%(fore_e_min, fore_e_max))
         A = (fore_map2 - fore_map1)/(fore_e_max - fore_e_min)
         B = fore_map1 - fore_e_min*A
         #fore_integr = A/2*(e_max**2 - e_min**2) + B*(e_max - e_min)
@@ -249,17 +262,17 @@ def mergeft(path_to_files, out_file_name, N1week, Nnweek):
     
 def main():
     fore_files_list = [os.path.join(GRATOOLS_CONFIG, \
-                                        'fits/gll_iem_v06_hp512_523.fits'),
+                                        'fits/gll_iem_v06_hp512_146647.fits'),
                        os.path.join(GRATOOLS_CONFIG, \
-                                        'fits/gll_iem_v06_hp512_715.fits'),
+                                        'fits/gll_iem_v06_hp512_200561.fits'),
                        os.path.join(GRATOOLS_CONFIG, \
-                                        'fits/gll_iem_v06_hp512_978.fits'),
+                                        'fits/gll_iem_v06_hp512_274296.fits'),
                        os.path.join(GRATOOLS_CONFIG, \
-                                        'fits/gll_iem_v06_hp512_1338.fits'),
+                                        'fits/gll_iem_v06_hp512_375138.fits'),
                        os.path.join(GRATOOLS_CONFIG, \
-                                        'fits/gll_iem_v06_hp512_1830.fits'),
+                                        'fits/gll_iem_v06_hp512_513056.fits'),
                        ]
-    e_min, e_max = 1000.00, 1737.80
+    e_min, e_max = 524807.00, 575439.00
     get_foreground_integral_flux_map(fore_files_list, e_min, e_max)
 
 if __name__ == '__main__':
