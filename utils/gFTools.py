@@ -47,33 +47,57 @@ def get_foreground_integral_flux_map(fore_files_list, e_min, e_max):
     else: 
         logger.info('Computing the integral flux of the foreground model...')
         logger.info('...between %.2f - %.2f'%(e_min, e_max))
-        #fore_map2 = hp.read_map(fore_files_list[np.where(fore_en>e_max)[0][0]])
         if not list(np.where(fore_en>e_max)[0]):
-            print 'aaaaa'
             print np.where(fore_en>e_min)[0]
             if not list(np.where(fore_en>e_min)[0]):
-                print 'bbbb'
                 fore_map1 = hp.read_map(fore_files_list[-2])
                 fore_map2 = hp.read_map(fore_files_list[-1])
                 fore_e_min = fore_en[-2] 
                 fore_e_max = fore_en[-1]
             else:
-                fore_map2 = hp.read_map(fore_files_list[np.where(fore_en<e_max)[0][-1]])
+                fore_map2 = hp.read_map(fore_files_list[np.where(\
+                            fore_en<e_max)[0][-1]])
                 fore_e_max = fore_en[np.where(fore_en<e_max)[0][-1]] 
-                fore_map1 = hp.read_map(fore_files_list[np.where(fore_en<e_min)[0][-1]])
+                fore_map1 = hp.read_map(fore_files_list[np.where(\
+                            fore_en<e_min)[0][-1]])
                 fore_e_min = fore_en[np.where(fore_en<e_min)[0][-1]]
         else:
-            fore_map1 = hp.read_map(fore_files_list[np.where(fore_en<e_min)[0][-1]])
-            fore_map2 = hp.read_map(fore_files_list[np.where(fore_en>e_max)[0][0]])
+            fore_map1 = hp.read_map(fore_files_list[np.where(\
+                        fore_en<e_min)[0][-1]])
+            fore_map2 = hp.read_map(fore_files_list[np.where(\
+                        fore_en>e_max)[0][0]])
             fore_e_max = fore_en[np.where(fore_en>e_max)[0][0]]
             fore_e_min = fore_en[np.where(fore_en<e_min)[0][-1]]
-        logger.info('getting foreground between %.2f - %.2f'%(fore_e_min, fore_e_max))
+        logger.info('getting foreground between %.2f - %.2f'\
+                        %(fore_e_min, fore_e_max))
         A = (fore_map2 - fore_map1)/(fore_e_max - fore_e_min)
         B = fore_map1 - fore_e_min*A
-        #fore_integr = A/2*(e_max**2 - e_min**2) + B*(e_max - e_min)
-        fore_integr = (A*np.sqrt(e_max*e_min) + B)#*(e_max-e_min)
+        fore_integr = (A*np.sqrt(e_max*e_min) + B)
         hp.write_map(out_name, fore_integr)
         return fore_integr
+
+def csi_parse(csi_file):
+    """Parsing of the *_csi.txt files
+    """
+    logger.info('loading Csi values from %s'%csi_file)
+    csi = []
+    theta = []
+    emin, emax, emean = [], [], []
+    f = open(csi_file, 'r')
+    for line in f:
+        if 'ENERGY\t' in line:
+            e1, e2, em = [float(item) for item in line.split()[1:]]
+            emin.append(e1)
+            emax.append(e2)
+            emean.append(em)
+        if 'CSI\t' in line:
+            c = np.array([float(item) for item in line.split()[1:]])
+            csi.append(c)
+        if 'THETA\t' in line:
+            th = np.array([float(item) for item in line.split()[1:]])
+            theta.append(th)
+    f.close()
+    return np.array(emin), np.array(emax), np.array(emean), csi, theta
 
 def cp_parse(cp_file):
     """Parsing of the *_cps.txt files
