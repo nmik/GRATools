@@ -206,7 +206,7 @@ def main():
                           '/Allyrs_filtered_gti_ltcube.fits', 
                       'outfile': psf_file, 
                       'irfs': 'P8R2_ULTRACLEANVETO_V6',
-                      'evtype': 56,
+                      'evtype': 3,
                       'ra': ra[i], 
                       'dec': dec[i], 
                       'emin': 500, 
