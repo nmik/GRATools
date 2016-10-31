@@ -23,7 +23,6 @@ import numpy as np
 import healpy as hp
 import pyfits as pf
 from sets import Set
-#from functools import reduce
 import multiprocessing
 
 __description__ = 'Makes the analysis'
@@ -45,9 +44,9 @@ PARSER = argparse.ArgumentParser(description=__description__,
                                  formatter_class=formatter)
 PARSER.add_argument('--config', type=str, required=True,
                     help='the input configuration file')
-PARSER.add_argument('--show', type=ast.literal_eval, choices=[True, False],
-                    default=False,
-                    help='True if you want to see the maps')
+PARSER.add_argument('--ncores', type=int, required=False,
+                    default=6,
+                    help='Number of cores to be used in the process')
 
 def get_var_from_file(filename):
     f = open(filename)
@@ -60,7 +59,8 @@ def csi_compute(param):
     get_var_from_file(os.path.join(GRATOOLS_CONFIG, 'Csi_config.py'))
     th_bins = data.TH_BINNING
     i, veci, dI, nside = param
-    print i
+    if i%10000 == 0:
+        print i
     dIi = dI[i]
     dIij_list = [[] for l in range(0, len(th_bins)-1)]
     counts_list = [[] for l in range(0, len(th_bins)-1)]
@@ -71,9 +71,7 @@ def csi_compute(param):
         dIj = dI[pixintoring]
         dIj = dIj[dIj > hp.UNSEEN]
         dIij = np.sum(dIi*dIj)
-        #dIij = np.sum(np.array([dIi*j for j in dIj if j > hp.UNSEEN]))
         counts = len(dIj)
-        #counts = len([j for j in dIj if j > hp.UNSEEN])
         dIij_list[th].append(dIij)
         counts_list[th].append(counts)
     return dIij_list, counts_list
@@ -82,14 +80,8 @@ def mkCsi(**kwargs):
     """                                      
     """
     get_var_from_file(kwargs['config'])
-    logger.info('Calculating PSF with gtpsf...')
-    dict_gtpsf = data.DICT_GTPSF
-    from GRATools.utils.ScienceTools_ import gtpsf
-    gtpsf(dict_gtpsf)
-    from GRATools.utils.gWindowFunc import get_psf
-    psf_file = data.PSF_FILE
-    psf = get_psf(psf_file)
-    p = multiprocessing.Pool(processes=8)
+    ncores = kwargs['ncores']
+    p = multiprocessing.Pool(processes=ncores)
     logger.info('Starting Csi analysis...')
     in_label = data.IN_LABEL
     out_label = data.OUT_LABEL
@@ -124,7 +116,9 @@ def mkCsi(**kwargs):
         veci = hp.rotator.dir2vec(diri)
         xyz = np.array([(veci[0][i], veci[1][i], veci[2][i]) 
                         for i in range(0, len(veci[0]))])
-        args = zip(_unmask, xyz, [dI]*npix_unmask,
+        #args = zip(_unmask, xyz, [dI]*npix_unmask,
+        #           [nside]*npix_unmask)
+        args = zip(_unmask, xyz, [flux_map]*npix_unmask,
                    [nside]*npix_unmask)
         a = np.array(p.map(csi_compute, args))
         SUMij_list = a[:,0]   
@@ -139,10 +133,6 @@ def mkCsi(**kwargs):
                           replace(']','').replace(', ', ' ')) 
         csi_txt.write('CSI\t%s\n'%str(list(csi)).replace('[',''). \
                           replace(']','').replace(', ', ' '))
-        plt.plot(theta, csi, 'o--')
-        if kwargs['show'] == True:
-            plt.show()
-        save_current_figure('csi_th_%d-%d.png'%(emin, emax))
     csi_txt.close()
     p.close()
     p.join()
