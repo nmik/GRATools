@@ -14,7 +14,8 @@
 """Analysis utilities 
 """
 
-  
+
+
 import os
 import re
 import numpy as np
@@ -28,8 +29,12 @@ FORE_EN = re.compile('\_\d+\.')
 
 
 def get_foreground_integral_flux_map(fore_files_list, e_min, e_max):
-    """mean_energy: float
-       the mean of the energy bin
+    """fore_files_list: list of str
+           Ordered list of the foreground files (one for each energy)
+       e_min: float
+           the min of the energy bin
+       e_max: float 
+           the max of the energy bin
     """
     fore_en = []
     for f in fore_files_list:
@@ -37,7 +42,6 @@ def get_foreground_integral_flux_map(fore_files_list, e_min, e_max):
         en = float(m_en.replace('_','').replace('.',''))
         fore_en.append(en)
     fore_en = np.array(fore_en)
-    print fore_en
     out_name = fore_files_list[0].replace('_%i.fits'%fore_en[0], 
                                           '_%d-%d.fits'%(e_min, e_max))
     if os.path.exists(out_name):
@@ -72,7 +76,9 @@ def get_foreground_integral_flux_map(fore_files_list, e_min, e_max):
                         %(fore_e_min, fore_e_max))
         A = (fore_map2 - fore_map1)/(fore_e_max - fore_e_min)
         B = fore_map1 - fore_e_min*A
-        fore_integr = (A*np.sqrt(e_max*e_min) + B)
+        #fore_integr = (A/2*(e_max**2-e_min**2)+B*(e_max-e_min))*(e_max-e_min)
+        #print 'e mean:', np.sqrt((e_max*e_min)), 'delta E:', e_max-e_min
+        fore_integr = (A*np.sqrt(e_max*e_min) + B)*(e_max-e_min)
         hp.write_map(out_name, fore_integr)
         return fore_integr
 
@@ -82,6 +88,7 @@ def csi_parse(csi_file):
     logger.info('loading Csi values from %s'%csi_file)
     csi = []
     theta = []
+    Rs = []
     emin, emax, emean = [], [], []
     f = open(csi_file, 'r')
     for line in f:
@@ -96,8 +103,11 @@ def csi_parse(csi_file):
         if 'THETA\t' in line:
             th = np.array([float(item) for item in line.split()[1:]])
             theta.append(th)
+        if 'R\t' in line:
+            r = np.array([float(item) for item in line.split()[1:]])
+            Rs.append(r)
     f.close()
-    return np.array(emin), np.array(emax), np.array(emean), csi, theta
+    return np.array(emin), np.array(emax), np.array(emean), np.array(csi), np.array(theta), np.array(csi)
 
 def cp_parse(cp_file):
     """Parsing of the *_cps.txt files
