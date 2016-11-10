@@ -29,6 +29,7 @@ __description__ = 'Computes fluxes'
 """
 import ast
 import argparse
+from scipy.optimize import curve_fit
 from GRATools import GRATOOLS_OUT
 from GRATools import GRATOOLS_CONFIG
 from GRATools.utils.matplotlib_ import pyplot as plt
@@ -70,6 +71,8 @@ def mkRestyle(**kwargs):
         mask_file = data.MASK_FILE
         if type(mask_file) == list:
             mask_file = mask_file[i]
+        mask = hp.read_map(mask_file)
+        _unmask = np.where(mask != 0)[0]
         maxb = maxb + 1
         logger.info('Considering bins from %i to %i...' %(minb, maxb-1))
         logger.info('Retriving count and exposure maps...')
@@ -113,8 +116,9 @@ def mkRestyle(**kwargs):
         logger.info('Computing the flux for each micro energy bin...')
         flux_map = []
         nside = kwargs['udgrade']
-        sr = 4*np.pi/hp.nside2npix(nside)
-        print 'sr = ', sr, 4*np.pi/hp.nside2npix(512)
+        npix = hp.nside2npix(nside)
+        sr = 4*np.pi/npix
+        iii = np.arange(npix)
         for i, cmap in enumerate(all_counts):
             flux_map.append(cmap/all_exps[i]/sr)
 
@@ -122,18 +126,32 @@ def mkRestyle(**kwargs):
         logger.info('Rebinning...')
         logger.info('Merging fluxes from %.2f to %.2f MeV' %(E_MIN, E_MAX))
         from GRATools.utils.gFTools import get_foreground_integral_flux_map
-        fore_map = get_foreground_integral_flux_map(fore_files,
-                                                    emin[0], emax[0])
-        macro_flux = flux_map[0] - fore_map
+        # implement fit of the foreground
+        fore0 = get_foreground_integral_flux_map(fore_files,
+                                                 emin[0], emax[0])
+        fore0_max = fore0[np.argmax(fore0[_unmask])]
+        vec0 = hp.pixelfunc.pix2vec(nside, np.argmax(fore0))
+        region0 = hp.query_disc(nside, vec0, np.radians(2))
+        region0 = np.array([i for i in region0 if not i in _unmask])
+        fore0_max_region = np.average(fore0[region0])
+        flux0_max_region = np.average(flux_map[0][region0])
+        fore_norm0 = abs(fore0_max_region-flux0_max_region)/fore0_max_region
+        logger.info('Foreground Normalization: %.3f'%fore_norm0)
+        macro_flux = flux_map[0] - fore_norm0*fore0
         macro_fluxerr = (emean[0]/emean[0])**(-gamma)/(all_exps[0])**2
-        mask = hp.read_map(mask_file)
-        _unmask = np.where(mask != 0)[0]
         CN = np.mean(all_counts[0][_unmask]/(all_exps[0][_unmask])**2)/sr
         for b in range(1, len(flux_map)):
             fore = get_foreground_integral_flux_map(fore_files,
                                                     emin[b], emax[b])
-            fore_map = fore_map + fore
-            macro_flux = macro_flux + flux_map[b] - fore
+            fore_max = fore[np.argmax(fore)]
+            vec = hp.pixelfunc.pix2vec(nside, np.argmax(fore))
+            region = hp.query_disc(nside, vec, np.radians(1))
+            region = np.array([i for i in region if not i in _unmask])
+            fore_max_region = np.average(fore[region])
+            flux_max_region = np.average(flux_map[b][region])
+            fore_norm = abs(fore_max_region-flux_max_region)/fore_max
+            logger.info('Foreground Normalization: %.3f'%fore_norm)
+            macro_flux = macro_flux + flux_map[b] - fore_norm*fore
             macro_fluxerr = macro_fluxerr + \
                 (emean[b]/emean[0])**(-gamma)/(all_exps[b])**2
             print 'Cn',b , np.mean(all_counts[b][_unmask]/ \
@@ -169,15 +187,12 @@ def mkRestyle(**kwargs):
         logger.info('Created %s' %out_name_err)
         hp.write_map(out_name, macro_flux_masked, coord='G')
         hp.write_map(out_name_err, macro_fluxerr_masked, coord='G')
-        FORE_MEAN = np.sum(fore_map[_unmask])/len(fore_map[_unmask])
-        logger.info('Mean unmasked Foreground = %e'%FORE_MEAN)
         F_MEAN = np.sum(macro_flux[_unmask])/len(macro_flux[_unmask])
         FERR_MEAN = np.sqrt(np.sum(macro_fluxerr[_unmask]**2))/\
                                    len(macro_flux[_unmask])
         FSKY = float(len(macro_flux[_unmask]))/float(len(macro_flux))
         logger.info('Fsky = %.3f'%FSKY)
         print 'F_MEAN, FERR_MEAN = ', F_MEAN, FERR_MEAN
-
         new_txt.write('%.2f \t %.2f \t %.2f \t %e \t %e \t %e \t %f \n' \
                           %(E_MIN, E_MAX, E_MEAN, F_MEAN, FERR_MEAN, CN, FSKY))
     new_txt.close()
