@@ -28,12 +28,17 @@ To use this package:
 
 How to run the analysis:
 ------------------------
+This will show all the possible settings of a given function in bin/ :
+
+     python bin/ANYFUNCTION.py --h 
+
+
 examples:
 
-python bin/mkdataselection.py --config config/1yr_st_aniso_config.py
+	python bin/mkdataselection.py --config config/1yr_st_aniso_config.py
 
-python bin/mkdatarestyle.py --config config/restyle_config.py
+	python bin/mkdatarestyle.py --config config/restyle_config.py
 
-python bin/mkcl.py --config config/allyrs_Cl_config.py
+	python bin/mkcl.py --config config/allyrs_Cl_config.py
 
-python bin/mapview.py --infile output/output_flux/Allyrs_UCV_t56_flux_549-1000.fits --udgrade 128
+	python bin/mapview.py --infile output/output_flux/Allyrs_UCV_t56_flux_549-1000.fits --udgrade 128
