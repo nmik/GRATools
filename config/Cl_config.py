@@ -20,7 +20,7 @@ LTCUBE = os.path.join(FT_DATA_FOLDER, \
                     'output/output_gtltcube/Allyrs_filtered_gti_ltcube.fits')
 IRFS = 'P8R2_ULTRACLEANVETO_V6'#'P8R2_SOURCE_V6'
 EVTYPE = 56
-OUT_W_LABEL = '%s_Rp_%i'%(IRFS, EVTYPE)
+OUT_W_LABEL = '%s_%i'%(IRFS, EVTYPE)
 WEIGHT_SPEC_INDEX = 2.3
 PSF_FILE = os.path.join(GRATOOLS_OUT, 'psf_%s.fits'%OUT_W_LABEL)
 DICT_GTPSF = {'expcube': LTCUBE,
@@ -50,7 +50,7 @@ MASK_LIST = [os.path.join(GRATOOLS_CONFIG, 'fits/Mask_advanced_524-1000.fits'),
              os.path.join(GRATOOLS_CONFIG, 'fits/Mask_advanced_120226-190546.fits'),
              os.path.join(GRATOOLS_CONFIG, 'fits/Mask_advanced_190546-331131.fits'),
              os.path.join(GRATOOLS_CONFIG, 'fits/Mask_advanced_331131-575439.fits')]
-IN_LABEL = 'Allyrs_UCV_t56_Rp_maskweighted' #the label of the files to be considered
+IN_LABEL = 'Allyrs_UCV_t56_maskweighted'#, 'Allyrs_UCV_t56_maskweighted' 
 MASK_FILE = os.path.join(GRATOOLS_CONFIG, 'fits/Mask_no.fits')
 #MASK_FILE = MASK_LIST
 BINNING_LABEL = '13bins'

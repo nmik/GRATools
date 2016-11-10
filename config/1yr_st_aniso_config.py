@@ -15,10 +15,10 @@ import numpy as np
 from GRATools import FT_DATA_FOLDER
 from GRATools.utils.gFTools import ebinning_fits_file
 
-OUT_LABEL = '1yr_UCV_t56'
+OUT_LABEL = '1yr_SRC_t32'
 
 START_WEEK = 9 
-END_WEEK = 56
+END_WEEK = 60
 EBINNING_ARRAY = np.logspace(2., 6., 101)
 EBINNING_FILE = ebinning_fits_file(EBINNING_ARRAY)
 FT2_FILE =  os.path.join(FT_DATA_FOLDER, \
@@ -30,8 +30,8 @@ GTSELECT_DICT = {'infile': 'DEFAULT',
                  'emin': 100,
                  'emax': 1000000,
                  'zmax': 90,
-                 'evclass': 1024,
-                 'evtype': 56,
+                 'evclass': 128,
+                 'evtype': 32,
                  'outfile': 'DEFAULT',
                  'chatter': 4,
                  'clobber': 'no'}
@@ -60,11 +60,13 @@ GTLTCUBE_DICT = {'evfile': 'DEFAULT',
                  'zmax': 90,                     
                  'dcostheta': 0.025,
                  'binsz': 1,
-                 'outfile': 'DEFAULT',
+                 'outfile': os.path.join(FT_DATA_FOLDER,
+                        'output/output_gtltcube/1yr_filtered_gti_ltcube.fits'),
                  'chatter': 4,
                  'clobber': 'no'}
 
-GTEXPCUBE2_DICT = {'infile': 'DEFAULT',
+GTEXPCUBE2_DICT = {'infile': os.path.join(FT_DATA_FOLDER,
+                         'output/output_gtltcube/1yr_filtered_gti_ltcube.fits'),
                    'cmap': 'DEFAULT',
                    'irfs': 'CALDB',
                    'outfile': 'DEFAULT',
