@@ -54,27 +54,39 @@ def get_var_from_file(filename):
     data = imp.load_source('data', '', f)
     f.close()
 
+def permute_unmasked_pix(_arr):
+    unfrozen_indices = [i for i, val in enumerate(_arr) if val>hp.UNSEEN]
+    unfrozen_set = _arr[unfrozen_indices]
+    unfrozen_set_p = np.random.permutation(unfrozen_set)
+    _arr[unfrozen_indices] = unfrozen_set_p
+    return _arr
+
 def csi_compute(param):
     """worker function"""
     get_var_from_file(os.path.join(GRATOOLS_CONFIG, 'Csi_config.py'))
     th_bins = data.TH_BINNING
-    i, veci, dI, nside = param
+    i, veci, dI, R, Imean, nside = param
     if i%10000 == 0:
         print i
     dIi = dI[i]
     dIij_list = [[] for l in range(0, len(th_bins)-1)]
     counts_list = [[] for l in range(0, len(th_bins)-1)]
+    Rij_list = [[] for l in range(0, len(th_bins)-1)]
     for th, (thmin, thmax) in enumerate(zip(th_bins[:-1], th_bins[1:])):
         pixintorad_min = hp.query_disc(nside, veci, thmin)
         pixintorad_max = hp.query_disc(nside, veci, thmax)
         pixintoring = np.setxor1d(pixintorad_max, pixintorad_min)
+        Rij = R[pixintoring]
+        Rij = Rij[Rij > hp.UNSEEN]
         dIj = dI[pixintoring]
         dIj = dIj[dIj > hp.UNSEEN]
-        dIij = np.sum(dIi*dIj)
+        dIij = np.sum(dIi*dIj)#-Imean**2)
+        Rij = np.sum(Rij*Rij)
         counts = len(dIj)
         dIij_list[th].append(dIij)
         counts_list[th].append(counts)
-    return dIij_list, counts_list
+        Rij_list[th].append(Rij)
+    return dIij_list, counts_list, Rij_list
         
 def mkCsi(**kwargs):
     """                                      
@@ -97,6 +109,7 @@ def mkCsi(**kwargs):
         csi_txt.write('ENERGY\t %.2f %.2f %.2f\n'%(emin, emax, _emean[i]))
         flux_map_name = in_label+'_flux_%i-%i.fits'%(emin, emax)
         flux_map = hp.read_map(os.path.join(GRATOOLS_OUT_FLUX, flux_map_name))
+        R = hp.read_map(os.path.join(GRATOOLS_OUT_FLUX, flux_map_name))
         fsky = 1.-(len(np.where(flux_map == hp.UNSEEN)[0])/\
                        float(len(flux_map)))
         logger.info('fsky = %f'%fsky)
@@ -104,7 +117,9 @@ def mkCsi(**kwargs):
         nside = hp.npix2nside(npix)
         _unmask = np.where(flux_map != hp.UNSEEN)[0]
         npix_unmask = len(_unmask)
-        dI = flux_map-_f[i]
+        Imean = _f[i]
+        dI = flux_map-Imean
+        R = permute_unmasked_pix(R)
         th_bins = data.TH_BINNING
         theta = []
         for thmin, thmax in zip(th_bins[:-1], th_bins[1:]):
@@ -118,20 +133,26 @@ def mkCsi(**kwargs):
                         for i in range(0, len(veci[0]))])
         #args = zip(_unmask, xyz, [dI]*npix_unmask,
         #           [nside]*npix_unmask)
-        args = zip(_unmask, xyz, [flux_map]*npix_unmask,
-                   [nside]*npix_unmask)
+        args = zip(_unmask, xyz, [flux_map]*npix_unmask, [R]*npix_unmask, 
+                   [Imean]*npix_unmask, [nside]*npix_unmask)
         a = np.array(p.map(csi_compute, args))
-        SUMij_list = a[:,0]   
+        SUMij_list = a[:, 0]   
         SUMf_list = a[:, 1]
+        SUMR_list = a[:, 2]
         SUMij_th = []
-        SUMf_th = [] 
+        SUMf_th = []
+        SUMR_th = []
         for i, s in enumerate(SUMij_list[0]):
             SUMij_th.append(np.sum(SUMij_list[:, i]))
             SUMf_th.append(np.sum(SUMf_list[:, i]))
+            SUMR_th.append(np.sum(SUMR_list[:, i]))
         csi = np.array(SUMij_th)/np.array(SUMf_th)
+        r = np.array(SUMR_th)/np.array(SUMf_th)
         csi_txt.write('THETA\t%s\n'%str(list(theta)).replace('[',''). \
                           replace(']','').replace(', ', ' ')) 
         csi_txt.write('CSI\t%s\n'%str(list(csi)).replace('[',''). \
+                          replace(']','').replace(', ', ' '))
+        csi_txt.write('R\t%s\n'%str(list(r)).replace('[',''). \
                           replace(']','').replace(', ', ' '))
     csi_txt.close()
     p.close()
