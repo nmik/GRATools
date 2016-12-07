@@ -39,6 +39,9 @@ PARSER.add_argument('--udgrade', type=int, default=512,
 PARSER.add_argument('--optimized', type=ast.literal_eval, choices=[True, False],
                     default=False,
                     help='set min and max of the map in mollview')
+PARSER.add_argument('--counts', type=ast.literal_eval, choices=[True, False],
+                    default=False,
+                    help='set min and max of the map in mollview')
 
 
 def maps_view(**kwargs):
@@ -51,8 +54,14 @@ def maps_view(**kwargs):
     t = os.path.basename(input_file)
     plt.figure(figsize=(10, 7), dpi=80)
     nside_out = kwargs['udgrade']
+    logger.info('Returning a map with NSIDE=%i'%nside_out)
     if kwargs['field'] == 0:
-        healpix_maps = hp.pixelfunc.ud_grade(healpix_maps, nside_out, pess=True)
+        if kwargs['counts'] == True:
+            healpix_maps = hp.pixelfunc.ud_grade(healpix_maps, nside_out, 
+                                                 pess=True, power=-2)
+        else:
+            healpix_maps = hp.pixelfunc.ud_grade(healpix_maps, nside_out, 
+                                                 pess=True)
         if kwargs['optimized'] == True:
             logger.info('Optimizing...')
             hp.mollview(healpix_maps, title=t.replace('.fits',''), \
