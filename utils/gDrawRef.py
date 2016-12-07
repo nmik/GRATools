@@ -27,8 +27,20 @@ def ref_igrb_noFGsub():
     f = open(os.path.join(GRATOOLS_CONFIG,'ascii/IGRB_P7REP_noFGsub.txt'), 'r')
     y = [float(l.split()[1]) for l in f]
     igrb, = plt.plot(x, y, '--', color='red')
-    label = 'LAT data (P7REP IGRB)'
+    label = 'LAT data (P7REP)'
     return igrb, label
+
+def ref_foreground_spec():
+    f = open(os.path.join(GRATOOLS_CONFIG,'ascii/fore_ref_spec.txt'), 'r')
+    _x = [float(l.split()[0]) for l in f]
+    f = open(os.path.join(GRATOOLS_CONFIG,'ascii/fore_ref_spec.txt'), 'r')
+    _y = [float(l.split()[1]) for l in f]
+    fore = plt.plot(_x, _y, color='silver')
+    label='Published model (2016)'
+    legend = plt.Rectangle((0, 0), 1, 1, fc='silver')
+    #plt.xscale('log')
+    #plt.yscale('log')
+    return legend, label
 
 def ref_igrb_band():
     fsub = open(os.path.join(GRATOOLS_CONFIG,'ascii/IGRB_sub_band.txt'), 'r')

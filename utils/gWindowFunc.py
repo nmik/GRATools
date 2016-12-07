@@ -185,6 +185,10 @@ def main():
     plt.legend()
     #plt.show()
     """
+    #out_wbeam_txt = 'output/Wbeam_P8R2_ULTRACLEANVETO_V6_56.txt'
+    #wb = get_wbeam(out_wbeam_txt)
+    #wb.plot()
+    """
     NSIDE = 1
     NPIX = hp.nside2npix(NSIDE)
     iii = np.arange(NPIX)
@@ -226,13 +230,24 @@ def main():
         wl = wb_1GeV.plot(show=False, label='RA:%i, Dec:%i'%(ra[i],dec[i]))
         #lab.append('%i-%i'%(ra[i],dec[i]))
         #plots.append(wl)
-        #wb_50GeV = wb.hslice(50000)
-        #wb_50GeV.plot(show=False)
-        #wb_100000GeV = wb.hslice(100000)
-        #wb_100000GeV.plot(show=False)
-        #wb_500000GeV = wb.hslice(500000)
-        #wb_500000GeV.plot(show=False)
+        """
+    out_wbeam_txt = 'output/Wbeam_P8R2_ULTRACLEANVETO_V6_56.txt'                                                                                                                
+    wb = get_wbeam(out_wbeam_txt)
+    plt.figure(figsize=(10, 7), dpi=80)
+    _l = np.arange(0, 1000, 4)
+    wb_500MeV = wb.hslice(500)
+    plt.plot(wb_500MeV.x, wb_500MeV.y**2, label='0.5 GeV')
+    wb_5GeV = wb.hslice(5000)
+    plt.plot(wb_5GeV.x, wb_5GeV.y**2, label='5 GeV')
+    wb_50GeV = wb.hslice(50000)
+    plt.plot(wb_50GeV.x, wb_50GeV.y**2, label='50 GeV')
+    wb_100GeV = wb.hslice(100000)
+    plt.plot(wb_100GeV.x, wb_100GeV.y**2, label='100 GeV')
+    wb_300GeV = wb.hslice(300000)
+    plt.plot(wb_300GeV.x, wb_300GeV.y**2, label='300 GeV')
     plt.legend()
+    plt.xlabel('Energy [MeV]')
+    plt.ylabel('W$^{2}$$_{beam}$')
     plt.show()
 
 

@@ -194,7 +194,7 @@ def mask_src_weighted(cat_file, ENERGY, NSIDE):
     print 'Psf(%.2f)= %.2f'%(ENERGY, psf_en)
     FLUX = SOURCES.field('Flux1000')
     flux_min, flux_max = min(FLUX), max(FLUX)
-    rad_min, rad_max = 1., 5.
+    rad_min, rad_max = 2., 5.
     RADdeg = rad_min + FLUX*((rad_max - rad_min)/(flux_max - flux_min)) -\
         flux_min*((rad_max - rad_min)/(flux_max - flux_min))
     RADrad = np.radians(RADdeg)
