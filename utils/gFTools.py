@@ -203,6 +203,35 @@ def cp_parse(cp_file):
     return np.array(_emin), np.array(_emax),np.array(_emean), \
         np.array(_cp), np.array(_cperr)
 
+def clEcross_parse(cl_file):
+    """Parsing of the *_cps.txt files
+    """
+    logger.info('loading Cp values from %s'%cl_file)
+    ff = open(cl_file, 'r')
+    _emin1, _emax1, _emean1, _cls, _clserr = [], [], [], [], []
+    _emin2, _emax2, _emean2 = [], [], []
+    for line in ff:
+        if 'ENERGY1\t' in line:
+            emin1, emax1, emean1 = [float(item) for item in line.split()[1:]]
+            _emin1.append(emin1)
+            _emax1.append(emax1)
+            _emean1.append(emean1)
+        if 'ENERGY2\t' in line:
+            emin2, emax2, emean2 = [float(item) for item in line.split()[1:]]
+            _emin2.append(emin2)
+            _emax2.append(emax2)
+            _emean2.append(emean2)
+        if 'Cl\t' in line:
+            cl = np.array([float(item) for item in line.split()[1:]])
+            _cls.append(cl)
+        if 'Cl_ERR\t' in line:
+            clerr = np.array([float(item) for item in line.split()[1:]])
+            _clserr.append(clerr)
+    ff.close()
+    return np.array(_emin1), np.array(_emax1),np.array(_emean1), \
+        np.array(_emin2), np.array(_emax2),np.array(_emean2), \
+        np.array(_cls), np.array(_clserr)
+
 def clfore_parse(clfore_file):
     """Parsing of the *_forecls.txt files.
     """
