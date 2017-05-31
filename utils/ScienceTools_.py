@@ -171,7 +171,10 @@ def gtexpcube2(label, expcube2_dict):
     return OUTFILE
 
 def gtpsf(gtpsf_dict):
-    """
+    """gtpsf from Science Tools
+
+       gtpsf_dict: python dict
+          To define all the parameters
     """
     expcube = gtpsf_dict['expcube']
     outfile = gtpsf_dict['outfile']

@@ -620,9 +620,9 @@ class xInterpolatedBivariateSpline(xBivariateSplineBase, RectBivariateSpline):
         show : bool, optional
             If True, `plt.show()` is called at the end, interrupting the flow.
         """
-        from GRATools.utils.matplotlib_ import pyplot as plt
-        _x = numpy.linspace(self.xmin(), self.xmax(), num_pointsx)
-        _y = numpy.linspace(self.ymin(), self.ymax(), num_pointsy)
+        from GRATools.utils.matplotlib_ import pyplot as plt 
+        _x = numpy.logspace(self.xmin(), self.xmax(), num_pointsx)
+        _y = numpy.logspace(self.ymin(), self.ymax(), num_pointsy)
         _x, _y = numpy.meshgrid(_x, _y)
         _z = self(_x, _y, grid=False)
         if logz:

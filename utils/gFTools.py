@@ -17,7 +17,6 @@
 
 
 import os
-import re
 import numpy as np
 import pyfits as pf
 import healpy as hp
@@ -29,134 +28,34 @@ from GRATools.utils.logging_ import logger, abort
 from GRATools.utils.matplotlib_ import pyplot as plt
 from GRATools.utils.gSpline import xInterpolatedUnivariateSplineLinear
 
-FORE_EN = re.compile('\_\d+\.')
-
-def flux2counts(flux_map, exposure_map):
-    sr = 4*np.pi/len(flux_map)
-    counts_map = flux_map*exposure_map*sr
-    return counts_map
-
-def fit_foreground(fore_map, data_map):
-    """ATT: maps are intended to be healpix maps (namely numpy arrays)
+def iso_parse(isofile):
+    """Parsing of the ascii file containing the isotropic emission.
+        
+        isofile : str
+            ascii file containing the isotropic emission.
+            It must contain 3 columns: the first with the energy, the second 
+            with the flux, the third with the error of the flux.
     """
-    nside_out = 64
-    _notnull = np.where(data_map > 1e-30)[0]
-    mask_f = os.path.join(GRATOOLS_CONFIG, 'fits/Mask64_src2_gp30.fits')
-    mask = hp.read_map(mask_f)
-    _unmask = np.where(mask > 1e-30)[0]
-    logger.info('down grade...')
-    fore_repix = np.array(hp.ud_grade(fore_map, nside_out=nside_out))
-    data_repix =  np.array(hp.ud_grade(data_map, nside_out=nside_out))   
-    A = np.vstack([fore_repix[_unmask], np.ones(len(fore_repix[_unmask]))]).T
-    norm, const = np.linalg.lstsq(A, data_repix[_unmask])[0]
-    #a, norm = best_fit(fore_map[_notnull], data_map[_notnull])
-    logger.info('fit param (norm, const): %.3f, %e' %(norm, const))
-    return norm, const
+    f = open(isofile)
+    _en, _flux, _fluxerr = [], [], []
+    for line in f:
+        try:
+            en, flux, emeanfluxerr = [float(item) for item in \
+                                                line.split()]
+            _en.append(en)
+            _flux.append(flux)
+            _fluxerr.append(fluxerr)
+        except:
+            pass
+    f.close()
+    return np.array(_en), np.array(_flux), np.array(_fluxerr)
 
-def get_foreground_integral_flux_map(fore_files_list, e_min, e_max):
-    """fore_files_list: list of str
-           Ordered list of the foreground files (one for each energy)
-       e_min: float
-           the min of the energy bin
-       e_max: float 
-           the max of the energy bin
-    """
-    input_file = os.path.join(FT_DATA_FOLDER, 'models/gll_iem_v06.fits')
-    if not os.path.exists(input_file):
-        abort("Map %s not found!"%input_file)
-    frmaps = pf.open(input_file)
-    fore_en = np.array([x[0] for x in frmaps['ENERGIES'].data])
-    out_name = fore_files_list[0].replace('_%i.fits'%int(fore_en[0]), 
-                                          '_%d-%d.fits'%(e_min, e_max))
-    if os.path.exists(out_name):
-        logger.info('ATT: file %s already exists and returned...'%out_name)
-        fore_map = hp.read_map(out_name)
-        return fore_map
-    else: 
-        logger.info('Computing the integral flux of the foreground model...')
-        logger.info('...between %.2f - %.2f'%(e_min, e_max))
-        if (fore_en < e_max).any() and (fore_en > e_min).any():
-            if fore_en[(fore_en < e_max)&(fore_en > e_min)].size == 0:
-                if (fore_en < e_max).all():
-                    print 'no foreground model for e_max'
-                    if (fore_en < e_min).all():
-                        print 'no foreground model for e_min'
-                        fore_map1 = hp.read_map(fore_files_list[-2])
-                        fore_map2 = hp.read_map(fore_files_list[-1])
-                        fore_e_min = fore_en[-2]
-                        fore_e_max = fore_en[-1]
-                    else:
-                        fore_map2 = hp.read_map(fore_files_list[np.where(\
-                                    fore_en<e_max)[0][-1]])
-                        fore_e_max = fore_en[np.where(fore_en<e_max)[0][-1]]
-                        fore_map1 = hp.read_map(fore_files_list[np.where(\
-                                    fore_en<e_min)[0][-1]])
-                        fore_e_min = fore_en[np.where(fore_en<e_min)[0][-1]]
-                else:
-                    fore_map1 = hp.read_map(fore_files_list[np.where(\
-                                fore_en<e_min)[0][-1]])
-                    fore_map2 = hp.read_map(fore_files_list[np.where(\
-                                fore_en>e_max)[0][0]])
-                    fore_e_max = fore_en[np.where(fore_en>e_max)[0][0]]
-                    fore_e_min = fore_en[np.where(fore_en<e_min)[0][-1]]
-            else:
-                e_int = fore_en[(fore_en < e_max)&(fore_en > e_min)]
-                index = np.where(fore_en==e_int)[0]
-                if abs(e_min-e_int) <= abs(e_max-e_int):
-                    a = index-1
-                    fore_e_min = fore_en[a]
-                    fore_e_max = fore_en[index]
-                    fore_map1 = hp.read_map(fore_files_list[a])
-                    fore_map2 = hp.read_map(fore_files_list[index])
-                else:
-                    a = index+1
-                    if a > 29:
-                        a = index-1
-                        fore_e_min = fore_en[a]
-                        fore_e_max = fore_en[index]
-                        fore_map1 = hp.read_map(fore_files_list[a])
-                        fore_map2 = hp.read_map(fore_files_list[index])
-                    else:
-                        fore_e_min = fore_en[index]
-                        fore_e_max = fore_en[a]
-                        fore_map1 = hp.read_map(fore_files_list[index])
-                        fore_map2 = hp.read_map(fore_files_list[a])
-        elif (fore_en < e_max).all():
-            print 'no foreground model for e_max'
-            if (fore_en < e_min).all():
-                print 'no foreground model for e_min'
-                fore_map1 = hp.read_map(fore_files_list[-2])
-                fore_map2 = hp.read_map(fore_files_list[-1])
-                fore_e_min = fore_en[-2] 
-                fore_e_max = fore_en[-1]
-            else:
-                fore_map2 = hp.read_map(fore_files_list[np.where(\
-                            fore_en<e_max)[0][-1]])
-                fore_e_max = fore_en[np.where(fore_en<e_max)[0][-1]] 
-                fore_map1 = hp.read_map(fore_files_list[np.where(\
-                            fore_en<e_min)[0][-1]])
-                fore_e_min = fore_en[np.where(fore_en<e_min)[0][-1]]
-        else:
-            fore_map1 = hp.read_map(fore_files_list[np.where(\
-                        fore_en<e_min)[0][-1]])
-            fore_map2 = hp.read_map(fore_files_list[np.where(\
-                        fore_en>e_max)[0][0]])
-            fore_e_max = fore_en[np.where(fore_en>e_max)[0][0]]
-            fore_e_min = fore_en[np.where(fore_en<e_min)[0][-1]]
-        logger.info('getting foreground between %.2f - %.2f'\
-                        %(fore_e_min, fore_e_max))
-        A = (fore_map2 - fore_map1)/(fore_e_max - fore_e_min)
-        B = fore_map1 - fore_e_min*A
-        #fore_integr = (A/2*(e_max**2-e_min**2)+B*(e_max-e_min))
-        #print 'e mean:', np.sqrt((e_max*e_min)), 'delta E:', e_max-e_min
-        fore_integr1 = (A*e_max + B)
-        fore_integr2 = (A*e_min + B)
-        fore_integr = np.sqrt(fore_integr1*fore_integr2)*(e_max-e_min)
-        hp.write_map(out_name, fore_integr)
-        return fore_integr
 
 def csi_parse(csi_file):
-    """Parsing of the *_csi.txt files
+    """Parsing of the *_csi.txt files.
+    
+       csi_file : str
+           This file is created by bin/mkcsi.py app.
     """
     logger.info('loading Csi values from %s'%csi_file)
     csi = []
@@ -184,6 +83,9 @@ def csi_parse(csi_file):
 
 def cp_parse(cp_file):
     """Parsing of the *_cps.txt files
+
+       cp_file : str
+           This file is created by bin/mkcps.py app.
     """
     logger.info('loading Cp values from %s'%cp_file)
     ff = open(cp_file, 'r')
@@ -203,8 +105,11 @@ def cp_parse(cp_file):
     return np.array(_emin), np.array(_emax),np.array(_emean), \
         np.array(_cp), np.array(_cperr)
 
-def clEcross_parse(cl_file):
-    """Parsing of the *_cps.txt files
+def clcross_parse(cl_file):
+    """Parsing of the *_cps.txt files.
+
+       cl_file : str
+           This file is created by bin/mkpolspicecrosscl.py app.
     """
     logger.info('loading Cp values from %s'%cl_file)
     ff = open(cl_file, 'r')
@@ -234,7 +139,11 @@ def clEcross_parse(cl_file):
 
 def clfore_parse(clfore_file):
     """Parsing of the *_forecls.txt files.
+    
+       clfore_file : str
+           This file is created by bin/mkpolspiceforecl.py app.
     """
+    ls = []
     cls = []
     emin, emax = [], []
     f = open(clfore_file, 'r')
@@ -243,15 +152,22 @@ def clfore_parse(clfore_file):
             e1, e2 = [float(item) for item in line.split()[1:]]
             emin.append(e1)
             emax.append(e2)
+        if 'multipole\t' in line:
+            l = np.array([float(item) for item in line.split()[1:]])
+            ls.append(l)
         if 'Cl\t' in line:
             cl = np.array([float(item) for item in line.split()[1:]])
             cls.append(cl)
     f.close()
-    return np.array(emin), np.array(emax), np.array(cls)
+    return np.array(emin), np.array(emax), np.array(ls), np.array(cls)
 
-def cl_parse(cl_file):
+def cl_pol_parse(cl_file):
     """Parsing of the *_cls.txt files.
+
+       cl_file : str
+           This file is created by bin/mkpolspicecl.py app.
     """
+    ls = []
     cls = []
     clerrs = []
     emin, emax, emean = [], [], []
@@ -262,6 +178,9 @@ def cl_parse(cl_file):
             emin.append(e1)
             emax.append(e2)
             emean.append(em)
+        if 'multipole\t' in line:
+            l = np.array([float(item) for item in line.split()[1:]])
+            ls.append(l)
         if 'Cl\t' in line:
             cl = np.array([float(item) for item in line.split()[1:]])
             cls.append(cl)
@@ -269,10 +188,14 @@ def cl_parse(cl_file):
             cl_err = np.array([float(item) for item in line.split()[1:]])
             clerrs.append(cl_err)
     f.close()
-    return np.array(emin), np.array(emax), np.array(emean), cls, clerrs
+    return np.array(emin),np.array(emax),np.array(emean),np.array(ls),np.array(cls),  np.array(clerrs)
+
 
 def get_cl_param(cl_param_file):
     """Parsing of *_parameters.txt files.
+
+       cl_param_file : str
+           This file is created by bin/mkdatarestyle.py app.
     """
     logger.info('loading parameters from %s'%cl_param_file)
     ff = open(cl_param_file, 'r')
@@ -297,7 +220,11 @@ def get_cl_param(cl_param_file):
         
 def get_crbkg(txt_file):
     """Get the CR residual bkg (spline) as a function of the energy
-       from the txt files
+       from the txt files.
+
+       txt_file : str
+           It must contain 2 columns: the first one with the energy, the second
+           one with the cosmic ray residual background flux.
     """
     logger.info('Getting CR residual bkg from file %s'%txt_file)
     f = open(txt_file, 'r')
@@ -317,7 +244,7 @@ def get_crbkg(txt_file):
     f.close()
     return crbkg
 
-def get_energy_from_txt(txt_file, get_binning=False, mean='log', ):
+def get_energy_from_txt(txt_file, get_binning=False, mean='log'):
     """Returns a list with the center values of the energy bins
 
        txt_file: str
@@ -387,7 +314,6 @@ def ebinning_fits_file(ebinning_array):
                   %(txt_file_name, fits_file))
     logger.info('Created %s...'%fits_file)
     return fits_file
-    
 
 def mergeft(path_to_files, out_file_name, N1week, Nnweek):
     """creates a .txt file with the list of the FT files to merge.
@@ -439,53 +365,8 @@ def best_fit(X, Y):
     return a, b
 
 def main():
+    """Test Session
     """
-    crbkg_PSF1_file =  os.path.join(GRATOOLS_CONFIG, 
-                                    'ascii/p8r2_bkg_flux_t8.txt')
-    crbkg_PSF1 = get_crbkg(crbkg_PSF1_file)
-    crbkg_PSF1.plot(show=False)
-    x = crbkg_PSF1.x
-    xx = x**2
-    print x
-    y1 =  crbkg_PSF1.y
-    crbkg_PSF2_file =  os.path.join(GRATOOLS_CONFIG, 
-                                    'ascii/p8r2_bkg_flux_t16.txt')
-    crbkg_PSF2 = get_crbkg(crbkg_PSF2_file)
-    crbkg_PSF2.plot(show=False)
-    y2 =  crbkg_PSF2(x)
-    crbkg_PSF3_file =  os.path.join(GRATOOLS_CONFIG, 
-                                    'ascii/p8r2_bkg_flux_t32.txt')
-    crbkg_PSF3 = get_crbkg(crbkg_PSF3_file)
-    crbkg_PSF3.plot(show=False)
-    y3 =  crbkg_PSF2(x)
-    y = (y1/x+y2/x+y3/x)*x
-    print y
-    plt.yscale('log')
-    plt.xscale('log')
-    plt.show()
-    
-    fore_files_list = [os.path.join(GRATOOLS_CONFIG, \
-                                        'fits/gll_iem_v06_hp512_146647.fits'),
-                       os.path.join(GRATOOLS_CONFIG, \
-                                        'fits/gll_iem_v06_hp512_200561.fits'),
-                       os.path.join(GRATOOLS_CONFIG, \
-                                        'fits/gll_iem_v06_hp512_274296.fits'),
-                       os.path.join(GRATOOLS_CONFIG, \
-                                        'fits/gll_iem_v06_hp512_375138.fits'),
-                       os.path.join(GRATOOLS_CONFIG, \
-                                        'fits/gll_iem_v06_hp512_513056.fits'),
-                       ]
-    e_min, e_max = 524807.00, 575439.00
-    get_foreground_integral_flux_map(fore_files_list, e_min, e_max)"""
-    from scipy.optimize import curve_fit
-    ClFORE_FILE = os.path.join(GRATOOLS_OUT, 'fore_polspicecls.txt')
-    min1, emax1, clsfore = clfore_parse(ClFORE_FILE)
-    l = np.arange(len(clsfore[0]))
-    clsfore_spline = xInterpolatedUnivariateSplineLinear(l, clsfore[0])
-    clsfore_spline.plot(show=False)
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.show()
 
 
 if __name__ == '__main__':

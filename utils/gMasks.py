@@ -18,7 +18,6 @@ import os
 import healpy as hp
 import numpy as np
 import pyfits as pf
-from GRATools import FT_DATA_FOLDER
 from GRATools import GRATOOLS_CONFIG
 from GRATools.utils.logging_ import logger, abort
 from GRATools.utils.matplotlib_ import pyplot as plt
@@ -28,8 +27,8 @@ def mask_src(cat_file, MASK_S_RAD, NSIDE):
     """Returns the 'bad pixels' defined by the position of a source and a 
        certain radius away from that point.
 
-       SOURCE_CAT: str
-           opened fits file with the sorce catalog
+       cat_file: str
+           .fits file of the sorce catalog
        MASK_S_RAD: float
            radius around each source definig bad pixels to mask
        NSIDE: int
@@ -57,7 +56,7 @@ def mask_src(cat_file, MASK_S_RAD, NSIDE):
     src_cat.close()
     return BAD_PIX_SRC
 
-def mask_gp(MASK_GP_LAT,NSIDE):
+def mask_gp(MASK_GP_LAT, NSIDE):
     """Returns the 'bad pixels' around the galactic plain .
 
        MASK_GP_LAT: float
@@ -167,12 +166,14 @@ def mask_hemi_west(NSIDE):
 def mask_src_weighted(cat_file, ENERGY, NSIDE):
     """Returns the 'bad pixels' defined by the position of a source and a 
        certain radius away from that point. The radii increase with the 
-       brightness.
+       brightness and rescaled by a factor between 1 and 0.3 shaped as the PSF.
 
-       SOURCE_CAT: str
-           opened fits file with the sorce catalog
+       cat_file: str
+          .fits file with the sorce catalog
+       ENERGY: float
+          Mean energy of the map to be masked
        NSIDE: int
-           healpix nside parameter
+          healpix nside parameter
     """
     from GRATools.utils.gWindowFunc import get_psf_ref
     psf_ref_file = os.path.join(GRATOOLS_CONFIG, 'ascii/PSF_UCV_PSF1.txt')
@@ -198,17 +199,6 @@ def mask_src_weighted(cat_file, ENERGY, NSIDE):
     RADdeg = rad_min + FLUX*((rad_max - rad_min)/(flux_max - flux_min)) -\
         flux_min*((rad_max - rad_min)/(flux_max - flux_min))
     RADrad = np.radians(RADdeg)
-    #*****
-    #plt.title('Radius($\phi$)')
-    #plt.plot(FLUX, RADdeg, 'ro', ms=3, alpha=0.75)
-    #plt.plot((1e-12, 1e-5), (2, 2), '-', color='silver', linewidth=1.0)
-    #plt.xlabel('$\phi$')
-    #plt.ylabel('Radius [$\circ$]')
-    #plt.yscale('log')
-    #plt.xscale('log')
-    #plt.ylim(0.7, 6)
-    #plt.show()
-    #*****
     logger.info('Masking the extended Sources')
     logger.info('-> 10deg around CenA and LMC')
     logger.info('-> 5deg around the remaining')
@@ -256,7 +246,6 @@ def main():
         psf_min*((norm_max - norm_min)/(psf_max - psf_min))
     plt.title('Normalization Factor')
     plt.plot(energy, norm, 'ro--', ms=5, alpha=0.75)
-    #plt.plot((1e-12, 1e-5), (2, 2), '-', color='silver', linewidth=1.0)
     plt.xlabel('Energy [MeV]')
     plt.ylabel('Normalization factor')
     plt.yscale('log')
@@ -265,7 +254,7 @@ def main():
     plt.show()
     
     nside = 512
-    SRC_CATALOG_FILE = os.path.join(FT_DATA_FOLDER,'catalogs/gll_psc_v16.fit')
+    SRC_CATALOG_FILE = os.path.join(GRATOOLS_CONFIG,'catalogs/gll_psc_v16.fit')
     bad_pix = mask_src_weighted(SRC_CATALOG_FILE, 10000, nside)
     bad_pix += mask_gp(30, nside)
     npix = hp.nside2npix(nside)
