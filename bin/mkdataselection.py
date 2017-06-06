@@ -11,7 +11,18 @@
 #------------------------------------------------------------------------------#
 
 
-"""Science Tools Analysis App
+"""Science Tools Analysis App.
+
+   This app runs a chain of Fermi Science Tools:
+      1) gtselect
+      2) gtmktime
+      3) gtbin
+      4) gtltcube
+      5) gtexpcube2
+   If an output file already exists it won't be overwritten, because the
+   command won't be run. 
+   A configuration file is needed, in which all the ScienceTools parameters 
+   you want to set must be declared. See 1yr_st_aniso_config.py for e.g.
 """
 
 import os
@@ -19,7 +30,7 @@ import imp
 import numpy as np
 
 
-__description__ = 'Run the Science Tools'
+__description__ = 'Run a chain of Science Tools'
 
 
 """Command-line switches.
