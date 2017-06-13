@@ -74,11 +74,9 @@ def mkRestyle(**kwargs):
         new_txt_name = new_txt_name.replace('.txt','_2.txt')
     new_txt = open(new_txt_name,'w')
     new_txt.write('# \t E_MIN \t E_MAX \t E_MEAN \t F_MEAN \t FERR_MEAN \t CN \t FSKY \n')
-    norm_list = []
-    const_list = []
     fore_mean_list = []
-    #all_counts, all_exps = [], []
-    #flux_map = []
+    norm_list, norm_sx_list, norm_dx_list = [], [], []
+    const_list, const_sx_list, const_dx_list = [], [], []
     for i, (minb, maxb) in enumerate(macro_bins):
         all_counts, all_exps = [], []
         flux_map = []
@@ -185,10 +183,9 @@ def mkRestyle(**kwargs):
         macro_counts = all_counts[0]
 
         # implement foreground subtraction
-        fore_mean_list = []
-        norm_list, norm_sx_list, norm_dx_list = [], [], []
-        const_list, const_sx_list, const_dx_list = [], [], []
         if kwargs['foresub'] == True:
+            _norm_list, _norm_sx_list, _norm_dx_list = [], [], []
+            _const_list, _const_sx_list, _const_dx_list = [], [], []
             from GRATools.utils.gForeground import get_foreground_integral_flux_map
             from GRATools.utils.gForeground import get_ref_igrb_spline
             from GRATools.utils.gForeground import fit_foreground_poisson
@@ -203,34 +200,33 @@ def mkRestyle(**kwargs):
             for ii, (e1, e2) in enumerate(zip(emin, emax)):
                 fore = get_foreground_integral_flux_map(fore_files, e1, e2)
                 all_fore.append(fore)
-                all_c_guess.append(get_ref_igrb_spline(emean[ii]))
+                all_c_guess.append(get_ref_igrb_spline()(emean[ii]))
             n0, c0, n0_sx, n0_dx, c0_sx, c0_dx = fit_foreground_poisson(all_fore[0], 
-                                                                        flux_map[0], 
-                                                                        exp=all_exp[0],
-                                                                        sr=sr,
+                                                                        all_counts[0], 
+                                                                        exp=all_exps[0],
                                                                         n_guess=1., 
                                                                         c_guess=all_c_guess[0])
-            norm_list.append(n0)
-            norm_sx_list.append(n0_sx)
-            norm_dx_list.append(n0_dx)
-            const_list.append(c0)
-            const_sx_list.append(c0_sx)
-            const_dx_list.append(c0_dx)
+            _norm_list.append(n0)
+            _norm_sx_list.append(n0_sx)
+            _norm_dx_list.append(n0_dx)
+            _const_list.append(c0)
+            _const_sx_list.append(c0_sx)
+            _const_dx_list.append(c0_dx)
             macro_flux = flux_map[0]-n0*all_fore[0]
             macro_fore = n0*all_fore[0]
             CN = np.mean(all_counts[0][_unmask]/(all_exps[0][_unmask])**2)/sr
             for b in range(1, len(flux_map)):
                 n, c, n_sx, n_dx, c_sx, c_dx = fit_foreground_poisson(all_fore[b], 
-                                                                      flux_map[b], 
-                                                                      exp=all_exp[b],
+                                                                      all_counts[b], 
+                                                                      exp=all_exps[b],
                                                                       n_guess=1., 
                                                                       c_guess=all_c_guess[b])
-                norm_list.append(n)
-                norm_sx_list.append(n_sx)
-                norm_dx_list.append(n_dx)
-                const_list.append(c)
-                const_sx_list.append(c_sx)
-                const_dx_list.append(c_dx)
+                _norm_list.append(n)
+                _norm_sx_list.append(n_sx)
+                _norm_dx_list.append(n_dx)
+                _const_list.append(c)
+                _const_sx_list.append(c_sx)
+                _const_dx_list.append(c_dx)
                 fluxerr = (emean[b]/emean[0])**(-gamma)/(all_exps[b])**2
                 macro_fluxerr = macro_fluxerr + fluxerr
                 macro_flux = macro_flux + flux_map[b]-n*all_fore[b]
@@ -246,6 +242,12 @@ def mkRestyle(**kwargs):
             logger.info('Created %s' %out_name_fore)
             FORE_MEAN = np.mean(macro_fore[_unmask])
             fore_mean_list.append(FORE_MEAN)
+            norm_list.append(np.mean(np.array(_norm_list)))
+            norm_sx_list.append(np.amin(np.array(_norm_sx_list)))
+            norm_dx_list.append(np.amax(np.array(_norm_dx_list)))
+            const_list.append(np.sum(np.array(_norm_list)))
+            const_sx_list.append(np.amin(np.array(_const_sx_list)))
+            const_dx_list.append(np.amax(np.array(_const_dx_list)))
         else:
             CN = np.mean(all_counts[0][_unmask]/(all_exps[0][_unmask])**2)/sr
             macro_flux = flux_map[0]
@@ -282,7 +284,7 @@ def mkRestyle(**kwargs):
         hp.write_map(out_name, macro_flux_masked, coord='G')
         hp.write_map(out_name_unmask, macro_flux, coord='G')
         logger.info('Created %s' %out_name)
-        logger.info('Created %s' %out_name_err)
+        logger.info('Created %s' %out_name_unmask)
         F_MEAN = np.sum(macro_flux[_unmask])/len(macro_flux[_unmask])
         FERR_MEAN = np.sqrt(np.sum(macro_fluxerr[_unmask]**2))/\
                                    len(macro_flux[_unmask])
