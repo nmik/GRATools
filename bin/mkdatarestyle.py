@@ -47,7 +47,7 @@ PARSER.add_argument('--udgrade', type=int, default=512,
                     help='down/up-grade of the maps')
 PARSER.add_argument('--foresub', type=ast.literal_eval, choices=[True, False],
                     default=False,
-                    help='galactic foreground subtractin activated')
+                    help='galactic foreground subtraction activated')
 
 def get_var_from_file(filename):
     f = open(filename)
@@ -183,61 +183,68 @@ def mkRestyle(**kwargs):
         logger.info('Merging fluxes from %.2f to %.2f MeV' %(E_MIN, E_MAX))
         macro_fluxerr = (emean[0]/emean[0])**(-gamma)/(all_exps[0])**2
         macro_counts = all_counts[0]
-        macro_flux = flux_map[0]
 
         # implement foreground subtraction
+        fore_mean_list = []
+        norm_list, norm_sx_list, norm_dx_list = [], [], []
+        const_list, const_sx_list, const_dx_list = [], [], []
         if kwargs['foresub'] == True:
-            from GRATools.utils.gFTools import get_foreground_integral_flux_map
-            from GRATools.utils.gFTools import fit_foreground
-            from GRATools.utils.gFTools import flux2counts
+            from GRATools.utils.gForeground import get_foreground_integral_flux_map
+            from GRATools.utils.gForeground import get_ref_igrb_spline
+            from GRATools.utils.gForeground import fit_foreground_poisson
+            #from GRATools.utils.gForeground import flux2counts
             out_fore_folder = os.path.join(GRATOOLS_OUT, 'output_fore')
             out_name_fore = os.path.join(out_fore_folder,'fore_%i-%i.fits'\
                                              %(E_MIN, E_MAX))
-            out_name_forecount = os.path.join(out_fore_folder,
-                                              out_label+'_forecount_%i-%i.fits'\
-                                                  %(E_MIN, E_MAX))
             if not os.path.exists(out_fore_folder):
                 os.makedirs(out_fore_folder)
             all_fore = []
-            all_countfore = []
-            for e1, e2 in zip(emin, emax):
+            all_c_guess = []
+            for ii, (e1, e2) in enumerate(zip(emin, emax)):
                 fore = get_foreground_integral_flux_map(fore_files, e1, e2)
-                counts_fore = flux2counts(fore, all_exps[0])
                 all_fore.append(fore)
-                all_countfore.append(counts_fore)
-            tot_counts = sum(all_counts)
-            tot_flux = sum(flux_map)
-            tot_fore = sum(all_fore)
-            tot_countfore = sum(all_countfore)
-            n0, c0 = fit_foreground(tot_fore, tot_flux)   
-            #macro_flux = (all_counts[0] - n0*(all_countfore[0]))/all_exps[0]/sr
-            
-            macro_fore = all_fore[0]
-            macro_countfore = all_countfore[0]
+                all_c_guess.append(get_ref_igrb_spline(emean[ii]))
+            n0, c0, n0_sx, n0_dx, c0_sx, c0_dx = fit_foreground_poisson(all_fore[0], 
+                                                                        flux_map[0], 
+                                                                        exp=all_exp[0],
+                                                                        sr=sr,
+                                                                        n_guess=1., 
+                                                                        c_guess=all_c_guess[0])
+            norm_list.append(n0)
+            norm_sx_list.append(n0_sx)
+            norm_dx_list.append(n0_dx)
+            const_list.append(c0)
+            const_sx_list.append(c0_sx)
+            const_dx_list.append(c0_dx)
+            macro_flux = flux_map[0]-n0*all_fore[0]
+            macro_fore = n0*all_fore[0]
             CN = np.mean(all_counts[0][_unmask]/(all_exps[0][_unmask])**2)/sr
             for b in range(1, len(flux_map)):
-                #n, c = fit_foreground(all_countfore[b], all_counts[b])
-                #logger.info('Norm fact = %.3f'%n)
+                n, c, n_sx, n_dx, c_sx, c_dx = fit_foreground_poisson(all_fore[b], 
+                                                                      flux_map[b], 
+                                                                      exp=all_exp[b],
+                                                                      n_guess=1., 
+                                                                      c_guess=all_c_guess[b])
+                norm_list.append(n)
+                norm_sx_list.append(n_sx)
+                norm_dx_list.append(n_dx)
+                const_list.append(c)
+                const_sx_list.append(c_sx)
+                const_dx_list.append(c_dx)
                 fluxerr = (emean[b]/emean[0])**(-gamma)/(all_exps[b])**2
                 macro_fluxerr = macro_fluxerr + fluxerr
-                macro_flux = macro_flux+(all_counts[b] - n0*(all_countfore[b]))/\
-                    all_exps[b]/sr
+                macro_flux = macro_flux + flux_map[b]-n*all_fore[b]
                 macro_counts = macro_counts + all_counts[b]
-                macro_fore = macro_fore + all_fore[b]
-                macro_countfore = macro_countfore + all_countfore[b]
+                macro_fore = macro_fore + n*all_fore[b]
                 CN = CN + np.mean(all_counts[b][_unmask]/ \
                                       (all_exps[b][_unmask])**2)/sr
-            macro_flux = tot_flux - n0*tot_fore
             logger.info('CN (white noise) term = %e'%CN)
             macro_fluxerr = (np.sqrt(all_counts[0]*macro_fluxerr)/sr)
             macro_fore_masked = hp.ma(macro_fore)
             macro_fore_masked.mask = np.logical_not(mask)
             hp.write_map(out_name_fore, macro_fore, coord='G')
-            hp.write_map(out_name_forecount, macro_countfore, coord='G')
             logger.info('Created %s' %out_name_fore)
-            logger.info('Created %s' %out_name_forecount)
             FORE_MEAN = np.mean(macro_fore[_unmask])
-            print 'MEAN FORE FLUX: ', FORE_MEAN
             fore_mean_list.append(FORE_MEAN)
         else:
             CN = np.mean(all_counts[0][_unmask]/(all_exps[0][_unmask])**2)/sr
@@ -267,28 +274,32 @@ def mkRestyle(**kwargs):
         out_folder = os.path.join(GRATOOLS_OUT, 'output_flux')
         if not os.path.exists(out_folder):
             os.makedirs(out_folder)
-        out_name = os.path.join(out_folder,out_label+'_%s_flux_%i-%i.fits'\
+        out_name = os.path.join(out_folder,out_label+'_%s_fluxmasked_%i-%i.fits'\
                                       %(mask_label, E_MIN, E_MAX))
-        out_name_err = os.path.join(out_folder, out_label+'_%s_fluxerr_%i-%i.fits'\
-                                        %(mask_label, E_MIN, E_MAX))
+        out_name_unmask = os.path.join(out_folder, 
+                                       out_label+'_%s_flux_%i-%i.fits'\
+                                           %(mask_label, E_MIN, E_MAX))
+        hp.write_map(out_name, macro_flux_masked, coord='G')
+        hp.write_map(out_name_unmask, macro_flux, coord='G')
         logger.info('Created %s' %out_name)
         logger.info('Created %s' %out_name_err)
-        hp.write_map(out_name, macro_flux_masked, coord='G')
-        hp.write_map(out_name_err, macro_fluxerr_masked, coord='G')
         F_MEAN = np.sum(macro_flux[_unmask])/len(macro_flux[_unmask])
-        crbkg = get_crbkg(crbkg_file)
-        logger.info('Subtracting CR residual bkg...')
-        #F_MEAN = F_MEAN - (E_MAX-E_MIN)*crbkg(E_MEAN)/E_MEAN**2
         FERR_MEAN = np.sqrt(np.sum(macro_fluxerr[_unmask]**2))/\
                                    len(macro_flux[_unmask])
         FSKY = float(len(macro_flux[_unmask]))/float(len(macro_flux))
         logger.info('Fsky = %.3f'%FSKY)
-        print 'F_MEAN, FERR_MEAN = ', F_MEAN, FERR_MEAN
+        print('F_MEAN, FERR_MEAN = ', F_MEAN, FERR_MEAN)
         new_txt.write('%.2f \t %.2f \t %.2f \t %e \t %e \t %e \t %f \n' \
                           %(E_MIN, E_MAX, E_MEAN, F_MEAN, FERR_MEAN, CN, FSKY))
     if kwargs['foresub'] == True:
         new_txt.write('\n\n*** FOREGROUND PARAMETERS***\n\n')
         new_txt.write('MEAN FLUX \t %s\n' %str(fore_mean_list))
+        new_txt.write('NORM FIT PARAM \t %s\n' %str(norm_list))
+        new_txt.write('NORM FIT PARAM  errsx \t %s\n' %str(norm_sx_list))
+        new_txt.write('NORM FIT PARAM errdx \t %s\n' %str(norm_dx_list))
+        new_txt.write('IGRB FIT PARAM \t %s\n' %str(const_list))
+        new_txt.write('IGRB FIT PARAM errsx \t %s\n' %str(const_sx_list))
+        new_txt.write('IGRB FIT PARAM errdx \t %s\n' %str(const_dx_list))
     new_txt.close()
     logger.info('Created %s' %os.path.join(GRATOOLS_OUT, 
                                      '%s_%s_%s_parameters.txt'\
