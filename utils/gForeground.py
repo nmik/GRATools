@@ -45,7 +45,8 @@ def get_ref_igrb_spline():
     x = np.array([float(l.split()[0]) for l in f])
     f = open(os.path.join(GRATOOLS_CONFIG,'ascii/IGRB_guess.txt'), 'r')
     y = np.array([float(l.split()[1]) for l in f])
-    fmt = dict(xname='Energy' , xunits='MeV', yname='IGRB')
+    fmt = dict(xname='Energy' , xunits='MeV', yname='IGRB', 
+               yunits='MeV$^{-1}$/cm$^{-2}$/s')
     igrb = xInterpolatedUnivariateSplineLinear(x, y, **fmt)
     return igrb
 
@@ -228,11 +229,6 @@ def fit_foreground_poisson(fore_map, data_map, n_guess=1., c_guess=0.1,
     logger.info('Igrb err: %.e - %.e'%(np.amin(_igrb), np.amax(_igrb)))
     
     if show == True:
-        plt.figure(facecolor='white')
-        plt.plot(np.arange(len(lh_list)), lh_list, 'o', color='coral', 
-                 alpha=0.08)
-        plt.plot(lh_min,  lh_list[lh_min], 'ro')
-
         n = np.array([x[0] for x in combinations])
         plt.figure(facecolor='white')
         plt.plot(n, lh_list, 'o', color='coral', alpha=0.3)
@@ -252,7 +248,6 @@ def fit_foreground_poisson(fore_map, data_map, n_guess=1., c_guess=0.1,
         fig = plt.figure(facecolor='white')
         z = lh_list
         zmin = lh_list[lh_min]
-        #z[index] = np.full(len(index), np.amax(lh_list)*1.1)
         z.shape = (len(norm_list), len(igrb_list))
         ax = fig.add_subplot(111)
         cax = ax.matshow(z, origin='lower', cmap='Spectral',
