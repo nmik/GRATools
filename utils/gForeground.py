@@ -21,6 +21,7 @@ import re
 import numpy as np
 import pyfits as pf
 import healpy as hp
+from numba import jit
 from scipy import optimize as opt
 from itertools import product
 from scipy.misc import factorial as fact
@@ -85,6 +86,7 @@ def fit_foreground_lstsq(fore_map, data_map):
     logger.info('fit param (norm, const): %.3f, %e' %(norm, const))
     return norm, const
 
+@jit
 def poisson_likelihood(norm_guess, const_guess, fore_map, data_map, exp=None, 
                        sr=None):
     """Compute the log-likelihood as decribed here: 
@@ -113,12 +115,23 @@ def poisson_likelihood(norm_guess, const_guess, fore_map, data_map, exp=None,
     a = norm_guess
     b = const_guess
     factorial_data = fact(data_map)
+    lh = 0
+    if exp is not None:
+        for i, f in enumerate(fore_map):
+            lh += (a*f+b)*exp[i]*sr + np.log(factorial_data[i]) - \
+                data_map[i]*np.log((a*f+b)*exp[i]*sr)
+    else:
+        for i, f in enumerate(fore_map):
+            lh += np.sum(((a*f+b)+np.log(factorial_data[i]) -\
+                              data_map[i]*np.log((a*f+b))))
+    """
     if exp is not None:
         lh = np.sum((a*fore_map+b)*exp*sr + np.log(factorial_data) -
                  data_map*np.log((a*fore_map+b)*exp*sr))
     else:
         lh = np.sum(((a*fore_map+b)+np.log(factorial_data) - 
                      data_map*np.log((a*fore_map+b))))
+     """
     return lh
 
 def fit_foreground_poisson(fore_map, data_map, n_guess=1., c_guess=0.1,
@@ -216,32 +229,47 @@ def fit_foreground_poisson(fore_map, data_map, n_guess=1., c_guess=0.1,
     
     if show == True:
         plt.figure(facecolor='white')
-        plt.plot(np.arange(len(lh_list)), lh_list)
+        plt.plot(np.arange(len(lh_list)), lh_list, 'o', color='coral', 
+                 alpha=0.08)
         plt.plot(lh_min,  lh_list[lh_min], 'ro')
 
         n = np.array([x[0] for x in combinations])
         plt.figure(facecolor='white')
-        plt.plot(n, lh_list, '.')
-        plt.plot(norm_min, lh_list[lh_min] , 'ro')
+        plt.plot(n, lh_list, 'o', color='coral', alpha=0.3)
+        plt.plot(norm_min, lh_list[lh_min] , 'r*')
         plt.plot([_norm[0], _norm[-1]], [lh_delta, lh_delta], 'r-')
         plt.xlabel('Normalization')
         plt.ylabel('-Log(Likelihood)')
         
         igrb = np.array([x[1] for x in combinations])
         plt.figure(facecolor='white')
-        plt.plot(igrb, lh_list, '.')
-        plt.plot(igrb_min, lh_list[lh_min] , 'ro')
+        plt.plot(igrb, lh_list, 'o', color='coral', alpha=0.3)
+        plt.plot(igrb_min, lh_list[lh_min] , 'r*')
         plt.plot([np.amin(_igrb), np.amax(_igrb)], [lh_delta, lh_delta], 'r-')
         plt.xlabel('Constant')
         plt.ylabel('-Log(Likelihood)')
 
-        plt.figure(facecolor='white')
+        fig = plt.figure(facecolor='white')
         z = lh_list
-        z[index] = np.full(len(index), np.amax(lh_list)*1.1)
+        zmin = lh_list[lh_min]
+        #z[index] = np.full(len(index), np.amax(lh_list)*1.1)
         z.shape = (len(norm_list), len(igrb_list))
-        plt.matshow(z, origin='lower',  
+        ax = fig.add_subplot(111)
+        cax = ax.matshow(z, origin='lower', cmap='Spectral',
                     aspect='auto')
-        plt.colorbar()
+        plt.xlabel('$C$')
+        plt.ylabel('$N$')
+        plt.title('$\Phi_{data}=N\cdot\Phi_{model}+C$')
+        x_ticks = np.linspace(np.amin(igrb_list), np.amax(igrb_list), 6)
+        formatting_function = np.vectorize(lambda f: format(f, '6.1E'))
+        x_ticks = list(formatting_function(x_ticks))
+        y_ticks = list(np.around(np.linspace(np.amin(norm_list), 
+                                             np.amax(norm_list), 6), 
+                                 decimals=3))
+        ax.set_yticklabels(['']+y_ticks)
+        ax.set_xticklabels(['']+x_ticks)
+        cb = plt.colorbar(cax, format='$%.1e$')
+        cb.set_label('-Log(Likelihood)', rotation=90)
         norm_min_ind = list(norm_list).index(norm_min)
         igrb_min_ind = list(igrb_list).index(igrb_min)
         _norm_ind = []
@@ -251,15 +279,10 @@ def fit_foreground_poisson(fore_map, data_map, n_guess=1., c_guess=0.1,
             _igrb_ind.append(list(igrb_list).index(_igrb[i]))
         _norm_ind = np.array(_norm_ind)
         _igrb_ind = np.array(_igrb_ind)
-        
-        #plt.scatter(_igrb_ind, _norm_ind, s=55, c='b', alpha=0.7)
-        plt.scatter(igrb_min_ind, norm_min_ind, s=65, c='r', marker='*')
-        #plt.plot(igrb_min_ind, norm_min_ind, color='r', 
-        #           marker='*', markersize=10)
-        #, origin='lower',
-        #           extent=[norm_list.min(), norm_list.max(), 
-        #           igrb_list.min(), igrb_list.max()])#, vmax=z.max()
-        
+        plt.contourf(z, [zmin, zmin+2.3, zmin+4.61, zmin+5.99], 
+                     colors='w', origin='lower', alpha=0.3)
+        plt.scatter(igrb_min_ind, norm_min_ind, s=45, c='w', marker='+')
+
         plt.show()
     return norm_min, igrb_min, _norm[0], _norm[-1], np.amin(_igrb), \
         np.amax(_igrb)
@@ -305,7 +328,7 @@ def find_outer_energies(en_val, en_arr):
         en_dx = en_dx_arr[0]
     return en_sx, en_dx
 
-def get_foreground_integral_flux_map(fore_files_list, e_min, e_max):
+def get_fore_integral_flux_map(fore_files_list, e_min, e_max):
     """Returns the foreground map integrated between e_min and e_max
        A powerlaw is assumed fore the foregriunf energy spectrum, hence
        the interpolation between 2 given maps at given energies (given 

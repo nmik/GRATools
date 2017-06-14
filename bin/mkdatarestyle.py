@@ -186,10 +186,9 @@ def mkRestyle(**kwargs):
         if kwargs['foresub'] == True:
             _norm_list, _norm_sx_list, _norm_dx_list = [], [], []
             _const_list, _const_sx_list, _const_dx_list = [], [], []
-            from GRATools.utils.gForeground import get_foreground_integral_flux_map
+            from GRATools.utils.gForeground import get_fore_integral_flux_map
             from GRATools.utils.gForeground import get_ref_igrb_spline
             from GRATools.utils.gForeground import fit_foreground_poisson
-            #from GRATools.utils.gForeground import flux2counts
             out_fore_folder = os.path.join(GRATOOLS_OUT, 'output_fore')
             out_name_fore = os.path.join(out_fore_folder,'fore_%i-%i.fits'\
                                              %(E_MIN, E_MAX))
@@ -198,14 +197,15 @@ def mkRestyle(**kwargs):
             all_fore = []
             all_c_guess = []
             for ii, (e1, e2) in enumerate(zip(emin, emax)):
-                fore = get_foreground_integral_flux_map(fore_files, e1, e2)
+                fore = get_fore_integral_flux_map(fore_files, e1, e2)
                 all_fore.append(fore)
                 all_c_guess.append(get_ref_igrb_spline()(emean[ii]))
-            n0, c0, n0_sx, n0_dx, c0_sx, c0_dx = fit_foreground_poisson(all_fore[0], 
-                                                                        all_counts[0], 
-                                                                        exp=all_exps[0],
-                                                                        n_guess=1., 
-                                                                        c_guess=all_c_guess[0])
+            n0, c0, n0_sx, n0_dx, c0_sx, c0_dx = \
+                fit_foreground_poisson(all_fore[0], 
+                                       all_counts[0], 
+                                       exp=all_exps[0],
+                                       n_guess=1., 
+                                       c_guess=all_c_guess[0])
             _norm_list.append(n0)
             _norm_sx_list.append(n0_sx)
             _norm_dx_list.append(n0_dx)
@@ -216,11 +216,12 @@ def mkRestyle(**kwargs):
             macro_fore = n0*all_fore[0]
             CN = np.mean(all_counts[0][_unmask]/(all_exps[0][_unmask])**2)/sr
             for b in range(1, len(flux_map)):
-                n, c, n_sx, n_dx, c_sx, c_dx = fit_foreground_poisson(all_fore[b], 
-                                                                      all_counts[b], 
-                                                                      exp=all_exps[b],
-                                                                      n_guess=1., 
-                                                                      c_guess=all_c_guess[b])
+                n, c, n_sx, n_dx, c_sx, c_dx = \
+                    fit_foreground_poisson(all_fore[b], 
+                                           all_counts[b], 
+                                           exp=all_exps[b],
+                                           n_guess=1., 
+                                           c_guess=all_c_guess[b])
                 _norm_list.append(n)
                 _norm_sx_list.append(n_sx)
                 _norm_dx_list.append(n_dx)
