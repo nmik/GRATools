@@ -199,13 +199,14 @@ def mkRestyle(**kwargs):
             for ii, (e1, e2) in enumerate(zip(emin, emax)):
                 fore = get_fore_integral_flux_map(fore_files, e1, e2)
                 all_fore.append(fore)
-                all_c_guess.append(get_ref_igrb_spline()(emean[ii]))
+                all_c_guess.append(get_ref_igrb_spline()(emean[ii])*10)
             n0, c0, n0_sx, n0_dx, c0_sx, c0_dx = \
                 fit_foreground_poisson(all_fore[0], 
                                        all_counts[0], 
                                        exp=all_exps[0],
                                        n_guess=1., 
-                                       c_guess=all_c_guess[0])
+                                       c_guess=all_c_guess[0],
+                                       show=True)
             _norm_list.append(n0)
             _norm_sx_list.append(n0_sx)
             _norm_dx_list.append(n0_dx)
@@ -246,9 +247,9 @@ def mkRestyle(**kwargs):
             norm_list.append(np.mean(np.array(_norm_list)))
             norm_sx_list.append(np.amin(np.array(_norm_sx_list)))
             norm_dx_list.append(np.amax(np.array(_norm_dx_list)))
-            const_list.append(np.sum(np.array(_norm_list)))
-            const_sx_list.append(np.amin(np.array(_const_sx_list)))
-            const_dx_list.append(np.amax(np.array(_const_dx_list)))
+            const_list.append(np.sum(np.array(_const_list)))
+            const_sx_list.append(np.sum(np.array(_const_sx_list)))
+            const_dx_list.append(np.sum(np.array(_const_dx_list)))
         else:
             CN = np.mean(all_counts[0][_unmask]/(all_exps[0][_unmask])**2)/sr
             macro_flux = flux_map[0]
