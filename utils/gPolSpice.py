@@ -248,7 +248,7 @@ def pol_cov_parse(pol_cov_out_file, wl_array=None, rebin=False, show=False):
          en_tick = list(np.logspace(0, np.log10(1500), 5).astype(int))
          ax.set_yticklabels(['']+en_tick)
          ax.set_xticklabels(['']+en_tick)
-         plt.title('Covariance matrix 158-301 MeV - PSF 3')
+         plt.title('Covariance matrix')
          plt.xlabel('$l_{i}$')
          plt.ylabel('$l_{j}$')
          cb = plt.colorbar(cax, format='$%i$')
