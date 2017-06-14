@@ -154,7 +154,7 @@ def mkCl(**kwargs):
                                  wl_array=wl,
                                  rebin=True, show=True)
         else:
-            _l, _cl, _cl_err, _cov = pol_cl_calculation(pol_dict, 
+            _l, _cl, _clerr, _cov = pol_cl_calculation(pol_dict, 
                                                   config_file_name,
                                                   raw_corr=(cn, wl),
                                                   rebin=True,show=True) 

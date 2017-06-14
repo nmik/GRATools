@@ -205,8 +205,7 @@ def mkRestyle(**kwargs):
                                        all_counts[0], 
                                        exp=all_exps[0],
                                        n_guess=1., 
-                                       c_guess=all_c_guess[0],
-                                       show=True)
+                                       c_guess=all_c_guess[0])
             _norm_list.append(n0)
             _norm_sx_list.append(n0_sx)
             _norm_dx_list.append(n0_dx)
