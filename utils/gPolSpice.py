@@ -158,7 +158,7 @@ def pol_cl_parse(pol_cl_out_file, pol_cov_out_file, raw_corr=None, rebin=False):
         pass
     if rebin:
         logger.info('Rebinning in multipole range:')
-        print rebinning
+        logger.info('%s'%str(rebinning))
         _lr, _clr, _clerrr = [], [], []
         for bmin, bmax in zip(rebinning[:-1], rebinning[1:]):
             logger.info('considering %i < li < %i'%(bmin,bmax))
@@ -171,8 +171,8 @@ def pol_cl_parse(pol_cl_out_file, pol_cov_out_file, raw_corr=None, rebin=False):
             invcov_sumoverj = []
             _clmean = np.mean(_cl[_index])
             _clerr = np.mean(_cov[bmin:bmax,bmin:bmax])
-            print 'cl_mean', _clmean
-            print 'cl_mean err', np.sqrt(_clerr)
+            logger.info('cl_mean %.3f'%_clmean)
+            logger.info('cl_mean err %.3f'%np.sqrt(_clerr))
             _clr.append(_clmean)
             _clerrr.append(np.sqrt(_clerr))
         _l = np.array(_lr) 
@@ -237,7 +237,7 @@ def pol_cov_parse(pol_cov_out_file, wl_array=None, rebin=False, show=False):
                  sigjj = _cov[j][j]
                  sigij = _cov[j][i]
                  if sigij < 0:
-                     sigij = 1e-100#-sigij#
+                     sigij = 1e-100
                  _cov2plotj.append(np.sqrt(sigij/np.sqrt(sigii*sigjj)))
              _cov2ploti.append(_cov2plotj)
          _cov2ploti = np.array(_cov2ploti)
