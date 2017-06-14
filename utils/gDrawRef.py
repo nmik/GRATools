@@ -57,7 +57,7 @@ def ref_igrb_band():
     up_line_y = [float(l.split()[1]) for l in fup]
     igrb = plt.fill(up_line_x + sub_line_x[::-1], up_line_y + sub_line_y[::-1],
                     color='0.8',  zorder=0)#, alpha='0.5')
-    label='Pass7 IGRB measure (Ackermann et al. 2014)'
+    label='Pass7 IGRB (Ackermann et al. 2014)'
     legend = plt.Rectangle((0, 0), 1, 1, fc='0.8')
     return legend, label
 

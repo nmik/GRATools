@@ -199,7 +199,7 @@ def mkRestyle(**kwargs):
             for ii, (e1, e2) in enumerate(zip(emin, emax)):
                 fore = get_fore_integral_flux_map(fore_files, e1, e2)
                 all_fore.append(fore)
-                all_c_guess.append(get_ref_igrb_spline()(emean[ii])*10)
+                all_c_guess.append(get_ref_igrb_spline()(emean[ii])*100)
             n0, c0, n0_sx, n0_dx, c0_sx, c0_dx = \
                 fit_foreground_poisson(all_fore[0], 
                                        all_counts[0], 

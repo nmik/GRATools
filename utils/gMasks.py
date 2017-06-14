@@ -175,6 +175,7 @@ def mask_src_weighted(cat_file, ENERGY, NSIDE):
        NSIDE: int
           healpix nside parameter
     """
+    import pandas as pd
     from GRATools.utils.gWindowFunc import get_psf_ref
     psf_ref_file = os.path.join(GRATOOLS_CONFIG, 'ascii/PSF_UCV_PSF1.txt')
     src_cat = pf.open(cat_file)
@@ -192,10 +193,11 @@ def mask_src_weighted(cat_file, ENERGY, NSIDE):
     norm = norm_min + psf_en*((norm_max - norm_min)/(psf_max - psf_min)) -\
         psf_min*((norm_max - norm_min)/(psf_max - psf_min))
     logger.info('Normalization of radii due to energy: %.3f'%norm)
-    print 'Psf(%.2f)= %.2f'%(ENERGY, psf_en)
-    FLUX = SOURCES.field('Flux1000')
+    logger.info('Psf(%.2f)= %.2f'%(ENERGY, psf_en))
+    #FLUX = SOURCES.field('Flux1000')
+    FLUX = np.log10(np.sort(SOURCES.field('Flux1000')))
     flux_min, flux_max = min(FLUX), max(FLUX)
-    rad_min, rad_max = 2., 5.
+    rad_min, rad_max = 0.5, 5.
     RADdeg = rad_min + FLUX*((rad_max - rad_min)/(flux_max - flux_min)) -\
         flux_min*((rad_max - rad_min)/(flux_max - flux_min))
     RADrad = np.radians(RADdeg)
@@ -206,7 +208,7 @@ def mask_src_weighted(cat_file, ENERGY, NSIDE):
         NAME = EXT_SOURCES[i][0]
         GLON = EXT_SOURCES[i][4]
         GLAT = EXT_SOURCES[i][5]
-        if NAME == 'LMC' or NAME == 'CenA Lobes':
+        if 'LMC' in NAME or 'CenA Lobes' in NAME:
             x, y, z = hp.rotator.dir2vec(GLON,GLAT,lonlat=True)
             b_pix= hp.pixelfunc.vec2pix(NSIDE, x, y, z)
             BAD_PIX_SRC.append(b_pix) 
@@ -233,25 +235,49 @@ def mask_src_weighted(cat_file, ENERGY, NSIDE):
 def main():
     """Simple test unit
     """
+    from scipy.interpolate import interp1d
+    cat_file = os.path.join(GRATOOLS_CONFIG,'catalogs/gll_psc_v16.fit')
+    src_cat = pf.open(cat_file)
+    CAT = src_cat['LAT_Point_Source_Catalog']
+    SOURCES = CAT.data
+    src_cat.close()
+    flux = np.log10(np.sort(SOURCES.field('Flux1000')))
+    flux_min, flux_max = min(flux), max(flux)
+    rad_min, rad_max = 0.5, 5.
+    RADdeg = rad_min + flux*((rad_max - rad_min)/(flux_max - flux_min)) -\
+        flux_min*((rad_max - rad_min)/(flux_max - flux_min))
+    plt.figure(facecolor='white')
+    plt.title('Disk Radius as a function of $\Phi_{src}$')
+    plt.plot(10**flux, RADdeg, '*-', color='cornflowerblue', linewidth=1, 
+             ms=5, alpha=0.2)
+    plt.xlabel('Flux [photon/cm$^{2}$/s]')
+    plt.ylabel('mask disk Radius [$^{\circ}$]')
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.ylim(1.5, 6)
+    plt.grid(which='both', linestyle='--', linewidth=1)
+
     from GRATools.utils.gWindowFunc import get_psf_ref
     psf_ref_file = os.path.join(GRATOOLS_CONFIG, 'ascii/PSF_UCV_PSF1.txt')
     psf_ref = get_psf_ref(psf_ref_file)
-    energy = np.array([743.73,1340.69,2208.67,3692.56,6416.93,11151.34,
-                       18370.95,30713.33,53373.66,92752.78,152802.88,
-                       255462.38,443942.75])
+    energy = np.logspace(1, 6, 10)
     psf_en = psf_ref(energy)
     psf_min, psf_max =  psf_ref.y[5], psf_ref.y[-1] 
     norm_min, norm_max = 1, 0.3
     norm = norm_min + psf_en*((norm_max - norm_min)/(psf_max - psf_min)) -\
         psf_min*((norm_max - norm_min)/(psf_max - psf_min))
+    norm_interp = interp1d(energy, norm, kind='cubic')
+    plt.figure(facecolor='white')
     plt.title('Normalization Factor')
-    plt.plot(energy, norm, 'ro--', ms=5, alpha=0.75)
+    plt.plot(energy, norm, '-', color='cornflowerblue',  ms=4, alpha=0.75)
     plt.xlabel('Energy [MeV]')
-    plt.ylabel('Normalization factor')
+    plt.ylabel('PSF normalization factor')
     plt.yscale('log')
     plt.xscale('log')
-    plt.ylim(0.09, 2)
-    plt.show()
+    plt.ylim(0.09, 5)
+    plt.xlim(100, 1000000)
+    plt.grid(which='both', linestyle='--', linewidth=1)
+    #plt.show()
     
     nside = 512
     SRC_CATALOG_FILE = os.path.join(GRATOOLS_CONFIG,'catalogs/gll_psc_v16.fit')
@@ -262,8 +288,9 @@ def main():
     for bpix in np.unique(bad_pix):
         mask[bpix] = 0
     fsky = 1-(len(np.unique(bad_pix))/float(npix))
-    title = 'f$_{sky}$ = %.3f'%fsky
-    hp.mollview(mask, title=title, coord='G')
+    title = 'Energy = 10 GeV, F$_{sky}$ = %.3f'%(fsky)
+    hp.mollview(mask, title=title, coord='G', cmap='bone')
+    hp.graticule(color='silver')
     plt.show()
 
 

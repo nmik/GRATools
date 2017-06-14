@@ -102,7 +102,7 @@ def mkCl(**kwargs):
         if type(mask_file) == list:
             mask_f = mask_file[i]
         mask = hp.read_map(mask_f)
-        wb1_en = get_integral_wbeam(out_wb_txt1, energy_spec, emin, emax)
+        wb_en = get_integral_wbeam(out_wb_txt, energy_spec, emin, emax)
         cl_txt.write('ENERGY\t %.2f %.2f %.2f\n'%(emin, emax, _emean[i]))
         l_max= lmax
         _l = np.arange(l_max)
@@ -154,7 +154,7 @@ def mkCl(**kwargs):
                                  wl_array=wl,
                                  rebin=True, show=True)
         else:
-            _l, _cl, _cl_err = pol_cl_calculation(pol_dict, 
+            _l, _cl, _cl_err, _cov = pol_cl_calculation(pol_dict, 
                                                   config_file_name,
                                                   raw_corr=(cn, wl),
                                                   rebin=True,show=True) 

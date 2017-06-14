@@ -312,29 +312,29 @@ def main():
     """
     
     mask_f = os.path.join(GRATOOLS_CONFIG, 'fits/Mask_src1p5_gp30.fits')
-    out_wbeam_txt = 'output/Wbeam_P8R2_ULTRACLEANVETO_V6_32.txt'
+    out_wbeam_txt = 'output/Wbeam_P8R2_ULTRACLEANVETO_V6_56.txt'
     wb_2d = get_wbeam(out_wbeam_txt, show=True)
     logger.info('Wait...computing integral Wbeam at some energy intervals!')
     gamma = 2.3
-    _emin = np.array([158.49,301.00,524.81,1000.00,1737.80, 2754.23,
-                      4786.30, 8317.64])
-    _emax =  np.array([301.00,524.81,1000.00, 1737.80, 2754.23, 4786.30, 
-                       8317.64, 14454.40])
-    #_emin = np.array([8317.64,14454.40,22908.68,39810.71,69183.09,
-    #                   109647.81,301995.16])
-    #_emax =  np.array([14454.40,22908.68,39810.71,69183.09,120226.44,
-    #                   301995.16,1000000.0])
+    _emin = np.array([158.49,301.00,524.81])#,1000.00,1737.80, 2754.23,
+                      #4786.30, 8317.64])a
+    _emax =  np.array([301.00,524.81,1000.00])#, 1737.80, 2754.23, 4786.30, 
+                       #8317.64, 14454.40])
+    _emin = np.array([1000.00,1737.80, 2754.23, 4786.30, 8317.64,14454.40,22908.68,
+                      39810.71,69183.09, 109647.81,301995.16])
+    _emax =  np.array([1737.80, 2754.23, 4786.30, 8317.64,14454.40,22908.68,
+                       39810.71,69183.09,120226.44,301995.16,1000000.0])
     spec = get_powerlaw_spline(gamma)
-    c = ['0.1','0.2','0.3','0.4','0.5','0.6','0.7','0.8']
+    c = ['0.', '0.1','0.2','0.3','0.4','0.5','0.6','0.7','0.8','0.9','0.95']
     plt.figure(facecolor='white')
     for i, (emin, emax) in enumerate(zip(_emin, _emax)):
         wb = get_integral_wbeam(out_wbeam_txt, spec, e_min=emin, e_max=emax)
         wb.plot(show=False, label='%.2f-%.2f GeV'%(emin/1000, emax/1000), 
                 color='%s'%c[i])
         plt.ylabel('W$_{beam}$')
-        plt.title('ULTRACLEANVETO PSF 3')
+        plt.title('ULTRACLEANVETO PSF 1+2+3')
         plt.ylim(0,1)
-        plt.legend(loc=1, fontsize=12)
+        plt.legend(loc=3, fontsize=10)
     plt.show()
    
 
