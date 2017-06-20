@@ -11,18 +11,29 @@
 #------------------------------------------------------------------------------#
 
 import os
-from GRATools import FT_DATA_FOLDER
 from GRATools import GRATOOLS_CONFIG
 
-IN_LABELS_LIST = ['1yr_UCV_t0', '2yr_UCV_t0',
-                  '3yr_UCV_t0', '4yr_UCV_t0',
-                  '5yr_UCV_t0', '6yr_UCV_t0',
-                  '7yr_UCV_t0', '8yr_UCV_t0'] 
-OUT_LABEL = 'Allyrs_UCV_t0_srcmask2'
-BINNING_LABEL = '13bins'
+IN_LABELS_LIST = ['1yr_UCV_t32', '2yr_UCV_t32',
+                  '3yr_UCV_t32', '4yr_UCV_t32',
+                  '5yr_UCV_t32', '6yr_UCV_t32',
+                  '7yr_UCV_t32', '8yr_UCV_t32'] 
+
+FORE_FILES_LIST = [os.path.join(GRATOOLS_CONFIG,'fits/gll_iem_v06_hp512_523.fits'),
+                   os.path.join(GRATOOLS_CONFIG,'fits/gll_iem_v06_hp512_715.fits'),
+                   os.path.join(GRATOOLS_CONFIG,'fits/gll_iem_v06_hp512_978.fits'),
+                   os.path.join(GRATOOLS_CONFIG,'fits/gll_iem_v06_hp512_1338.fits'),
+                   os.path.join(GRATOOLS_CONFIG,'fits/gll_iem_v06_hp512_1830.fits')]
+OUT_LABEL = 'Allyrs_UCV_t32'
+
+BINNING_LABEL = 'mybins'
 MICRO_NBINS = 100
-MACRO_BINS = [(18,24),(25,30),(31,35),(36,41),(42,47),(48,53),(54,58),(59,64),(65,70),(71,76),(77,81),(82,87),(88,93)]
+MACRO_BINS = [(18,24),(25,30)]
+
 POWER_LOW_INDEX = 2.30
-MASK_FILE = os.path.join(GRATOOLS_CONFIG, 'fits/Mask_src2_gp30.fits')
+
+MASK_FILE = os.path.join(GRATOOLS_CONFIG, 'fits/Mask_src2_gp30.fits') 
+MASK_LABEL = 'mymask'
+# In MASK_FILE Can be also a list of Mask, if so they will be used in order 
+# for each energy bin.
 
 
