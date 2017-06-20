@@ -11,7 +11,40 @@
 #------------------------------------------------------------------------------#
 
 
-"""Flux analysis
+"""This app is amed to prepare the data sample to the Anisotropy analysis.
+   Several steps are computed:
+       1) Sum in time: the data selection has been done in 1-year-wide time 
+          ------------ bins, so now it is possible to merge those bins to get 
+                       the total counts and exposures.
+       2) Foreground subtraction: (only if foresub is True) for each micro 
+          ----------------------- energy bin the foreground model fit and 
+                                  subtraction is performed. The fit is 
+                                  poissonian and given a galactic diffuse 
+                                  emissin model map in a given energy range and
+                                  a data map in the same energy range, it 
+                                  returns a constant parameter and a 
+                                  normalization to apply to the model map 
+                                  before performing the subtration. The data 
+                                  map can be either a flux map or a count map, 
+                                  in which case also the exposure map has to 
+                                  be given to the fit function.
+       3) Poissonian noise: the poissonian noise term is computed in each micro
+          ----------------- energy bin, then summed up those in the wider 
+                            energy bins to obtain the total poissonian noise 
+                            term of the rebinned maps (see step 4). This 
+                            calculation takes into account only the pixels 
+                            outside the mask we-ll apply to the maps for the 
+                            APS analysis, so the mask for each macro energy bin
+                            must be given.
+       3) Flux map Computation: the flux maps in each micro energy bin is 
+          --------------------- obtained by dividing the counts maps for the 
+                                relative exposure. If the foreground 
+                                subtraction is active, the normaized foreground
+                                flux map is subtracted from the data map.
+       4) Energy rebinning: at this point you have flux maps in fine energy 
+          ----------------- bins. Prior to the anysotropy analysis we want 
+                            wider energy bins.
+       
 """
 
 
@@ -58,7 +91,7 @@ def get_var_from_file(filename):
 def mkRestyle(**kwargs):
     """
     """
-    logger.info('Starting flux analysis...')
+    logger.info('Starting the restyling...')
     get_var_from_file(kwargs['config'])
     fore_files = data.FORE_FILES_LIST
     crbkg_file = data.CRBKG_FILE
@@ -73,7 +106,8 @@ def mkRestyle(**kwargs):
     if os.path.exists(new_txt_name):
         new_txt_name = new_txt_name.replace('.txt','_2.txt')
     new_txt = open(new_txt_name,'w')
-    new_txt.write('# \t E_MIN \t E_MAX \t E_MEAN \t F_MEAN \t FERR_MEAN \t CN \t FSKY \n')
+    new_txt.write(
+        '# \t E_MIN \t E_MAX \t E_MEAN \t F_MEAN \t FERR_MEAN \t CN \t FSKY \n')
     fore_mean_list = []
     norm_list, norm_sx_list, norm_dx_list = [], [], []
     const_list, const_sx_list, const_dx_list = [], [], []
@@ -149,7 +183,8 @@ def mkRestyle(**kwargs):
                                                            pess=True)
                         emap_mean = []
                         for i in range(0,len(emap_repix)-1):
-                            emap_mean.append(np.sqrt(emap_repix[i]*emap_repix[i+1]))    
+                            emap_mean.append(
+                                np.sqrt(emap_repix[i]*emap_repix[i+1]))    
                         exp_mean_map.append(np.asarray(emap_mean))
                 txt.close()
             logger.info('Summing in time...')
@@ -160,11 +195,11 @@ def mkRestyle(**kwargs):
 
             for i, cmap in enumerate(all_counts):
                 micro_count_name = os.path.join(GRATOOLS_OUT, 
-                                                'output_counts/%s_counts_%i.fits'
+                                             'output_counts/%s_counts_%i.fits'
                                                 %(out_label, micro_bins[i]))
                 hp.write_map(micro_count_name, cmap)
                 micro_exp_name = os.path.join(GRATOOLS_OUT, 
-                                              'output_counts/%s_exposure_%i.fits'
+                                           'output_counts/%s_exposure_%i.fits'
                                               %(out_label, micro_bins[i]))
                 hp.write_map(micro_exp_name, all_exps[i])
 
@@ -269,7 +304,7 @@ def mkRestyle(**kwargs):
                                       %(E_MIN, E_MAX))
         logger.info('Created %s' %out_counts_name)
         hp.write_map(out_counts_name, macro_counts, coord='G')
-        # now mask the rebinned flux and error maps        
+        # now mask the rebinned flux maps        
         macro_flux_masked = hp.ma(macro_flux)
         macro_fluxerr_masked = hp.ma(macro_fluxerr)
         macro_flux_masked.mask = np.logical_not(mask)
@@ -277,8 +312,9 @@ def mkRestyle(**kwargs):
         out_folder = os.path.join(GRATOOLS_OUT, 'output_flux')
         if not os.path.exists(out_folder):
             os.makedirs(out_folder)
-        out_name = os.path.join(out_folder,out_label+'_%s_fluxmasked_%i-%i.fits'\
-                                      %(mask_label, E_MIN, E_MAX))
+        out_name = os.path.join(out_folder,
+                                out_label+'_%s_fluxmasked_%i-%i.fits'\
+                                    %(mask_label, E_MIN, E_MAX))
         out_name_unmask = os.path.join(out_folder, 
                                        out_label+'_%s_flux_%i-%i.fits'\
                                            %(mask_label, E_MIN, E_MAX))
