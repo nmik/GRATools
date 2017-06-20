@@ -44,7 +44,15 @@
        4) Energy rebinning: at this point you have flux maps in fine energy 
           ----------------- bins. Prior to the anysotropy analysis we want 
                             wider energy bins.
-       
+       The output of this app is a txt file with all the relevant infos 
+       obtained running this script. This file will have the suffix 
+       '_parameters' and can be parse by the function  get_cl_param in
+       GRATools/utils. 
+
+   #######
+   Example: 
+   python bin/mkdatarestyle.py --config restyle_config.py --foresub True
+   #######       
 """
 
 
