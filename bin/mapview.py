@@ -39,9 +39,13 @@ PARSER.add_argument('--udgrade', type=int, default=512,
 PARSER.add_argument('--optimized', type=ast.literal_eval, choices=[True, False],
                     default=False,
                     help='set min and max of the map in mollview')
+PARSER.add_argument('--smoothing', type=float,default=1.,
+                    help='Gaussian beam fwhm for the smoothing (in deg)')
 PARSER.add_argument('--counts', type=ast.literal_eval, choices=[True, False],
                     default=False,
                     help='set min and max of the map in mollview')
+PARSER.add_argument('--applymask', type=str, default=None,
+                    help='healpy mask map to apply')
 
 
 def maps_view(**kwargs):
@@ -49,33 +53,38 @@ def maps_view(**kwargs):
     """
     input_file = kwargs['infile']
     healpix_maps = hp.read_map(input_file, field=kwargs['field'])
+    healpix_maps = hp.sphtfunc.smoothing(healpix_maps, fwhm=np.radians(kwargs['smoothing']))
     if not os.path.exists(input_file):
         abort("Map %s not found!"%input_file)
     t = os.path.basename(input_file)
-    plt.figure(figsize=(10, 7), dpi=80)
     nside_out = kwargs['udgrade']
     logger.info('Returning a map with NSIDE=%i'%nside_out)
     if kwargs['field'] == 0:
         if kwargs['counts'] == True:
+            if kwargs['applymask'] is not None:
+                mask = hp.read_map(kwargs['applymask'])
+                healpix_maps = healpix_maps*mask
             healpix_maps = hp.pixelfunc.ud_grade(healpix_maps, nside_out, 
                                                  pess=True, power=-2)
         else:
-            healpix_maps = hp.pixelfunc.ud_grade(healpix_maps, nside_out, 
-                                                 pess=True)
+            if kwargs['applymask'] is not None:
+                mask = hp.read_map(kwargs['applymask'])
+                healpix_maps = healpix_maps*mask
+                healpix_maps = hp.pixelfunc.ud_grade(healpix_maps, nside_out, 
+                                                     pess=True)
+                healpix_maps[np.where(healpix_maps==0)[0]] = hp.UNSEEN
         if kwargs['optimized'] == True:
             logger.info('Optimizing...')
             hp.mollview(healpix_maps, title=t.replace('.fits',''), \
-                            coord='G', min=1e-7, max=1e-4, norm='log')
+                            coord='G', min=-5e-6, max=5e-6)
             hp.graticule()
             overlay_tag(color='silver', x=0.45)
-            #save_current_figure(t.replace('.fits','.png'))
             plt.show()
         else:
             hp.mollview(healpix_maps, title=t.replace('.fits',''), \
                             coord='G')
             hp.graticule()
             overlay_tag(color='silver', x=0.45)
-            #save_current_figure(t.replace('.fits','.png'))
             plt.show()
     else:
         for i, maps in enumerate(healpix_maps):
@@ -84,17 +93,15 @@ def maps_view(**kwargs):
             if kwargs['optimized'] == True:
                 logger.info('Optimizing...')
                 hp.mollview(maps, title=t.replace('.fits','_%i'%i), \
-                                coord='G', min=1e-7, max=1e-4, norm='log')
+                                coord='G', min=-1e-7, max=1e-4)
                 hp.graticule()
                 overlay_tag(color='silver', x=0.45)
-                #save_current_figure(t.replace('.fits','.png'))
                 plt.show()
             else:
                 hp.mollview(healpix_maps, title=t.replace('.fits',''), \
                                 coord='G')
                 hp.graticule()
                 overlay_tag(color='silver', x=0.05)
-                #save_current_figure(t.replace('.fits','_%i.png'%i))
                 plt.show()
 
 if __name__ == '__main__':
