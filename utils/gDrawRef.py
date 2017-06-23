@@ -26,10 +26,8 @@ from GRATools.utils.gSpline import xInterpolatedUnivariateSplineLinear
 
 def make_error_boxes(ax, lx, hx, ydata, yerror, facecolor='k',
                      edgecolor='None', alpha=0.3):
-    print lx, hx, ydata, yerror
     errorboxes = []
     for x1, x2, y, ye in zip(lx, hx, ydata, yerror):
-        print (x1, y-ye),  abs(x2-x1), 2*ye
         rect = Rectangle((x1, y-ye), abs(x2-x1), 2*ye)
         errorboxes.append(rect)
     pc = PatchCollection(errorboxes, facecolor=facecolor, alpha=alpha,
@@ -94,16 +92,6 @@ def ref_cp_band():
     fig, ax = plt.subplots(1)
     refcp_plot = make_error_boxes(ax, lx, hx, y*np.sqrt(lx*hx)**4/(hx-lx)**2, 
                                   yerr*np.sqrt(lx*hx)**4/(hx-lx)**2)
-    #fsub = open(os.path.join(GRATOOLS_CONFIG,'ascii/cp_sub_band.txt'), 'r')
-    #fup = open(os.path.join(GRATOOLS_CONFIG,'ascii/cp_up_band.txt'), 'r')
-    #sub_line_x = [float(l.split()[0]) for l in fsub]
-    #up_line_x = [float(l.split()[0]) for l in fup]
-    #fsub = open(os.path.join(GRATOOLS_CONFIG,'ascii/cp_sub_band.txt'), 'r')
-    #fup = open(os.path.join(GRATOOLS_CONFIG,'ascii/cp_up_band.txt'), 'r')
-    #sub_line_y = [float(l.split()[1]) for l in fsub]
-    #up_line_y = [float(l.split()[1]) for l in fup]
-    #cp = plt.fill(up_line_x + sub_line_x[::-1], up_line_y + sub_line_y[::-1], \
-    #             color='0.8')
     label= 'M. Fornasa et al. 2016'
     legend = plt.Rectangle((0, 0), 1, 1, fc='k', alpha=0.3)
     return legend, label
@@ -121,7 +109,7 @@ def main():
     plt.figure()
     leg, lab = ref_igrb_band()
     igrb, lab2 = ref_igrb_noFGsub()
-    plt.xscale('log')                                                                                                                                  
+    plt.xscale('log')       
     plt.yscale('log')
     plt.legend([leg, igrb], [lab, lab2])
     plt.show()
