@@ -125,14 +125,6 @@ def poisson_likelihood(norm_guess, const_guess, fore_map, data_map, exp=None,
         for i, f in enumerate(fore_map):
             lh += np.sum(((a*f+b)+np.log(factorial_data[i]) -\
                               data_map[i]*np.log((a*f+b))))
-    """
-    if exp is not None:
-        lh = np.sum((a*fore_map+b)*exp*sr + np.log(factorial_data) -
-                 data_map*np.log((a*fore_map+b)*exp*sr))
-    else:
-        lh = np.sum(((a*fore_map+b)+np.log(factorial_data) - 
-                     data_map*np.log((a*fore_map+b))))
-     """
     return lh
 
 def fit_foreground_poisson(fore_map, data_map, n_guess=1., c_guess=0.1,
