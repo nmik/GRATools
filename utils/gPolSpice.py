@@ -69,7 +69,7 @@ def get_cl_model_SFG_spline(model_file, log=True):
 
 
 
-def remove_monopole_dipole(map_file_name):
+def remove_monopole_dipole(map_file_name, mask_file=None):
     """Returns a map obtained from the one given and cleaned for monopole and
        dipole.
        
@@ -79,7 +79,10 @@ def remove_monopole_dipole(map_file_name):
     """
     map_file_name_clean = map_file_name.replace('.fits', '_mdclean.fits')
     flux_map = hp.read_map(map_file_name)
-    print len(flux_map)
+    if mask_file is not None:
+        mask = hp.read_map(mask_file)
+        _index = np.where(mask<1e-30)[0] 
+        flux_map[_index] = hp.UNSEEN
     res = hp.pixelfunc.remove_dipole(flux_map, copy=True, fitval=False)
     hp.write_map(map_file_name_clean, res )
     return map_file_name_clean
