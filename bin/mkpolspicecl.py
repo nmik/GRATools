@@ -107,9 +107,10 @@ def mkCl(**kwargs):
         l_max= lmax
         _l = np.arange(l_max)
         wb_en = wb_en(_l)
+        # monopole and dipole cleaning from MASKED map, bad value = UNSEEN
         flux_map_name = in_label+'_fluxmasked_%i-%i.fits'%(emin, emax)
         flux_map_f = os.path.join(GRATOOLS_OUT_FLUX, flux_map_name)
-        flux_map_f_mdclean = remove_monopole_dipole(flux_map_f)#, mask_file=mask_f)
+        flux_map_f_mdclean = remove_monopole_dipole(flux_map_f)
         flux_map = hp.read_map(flux_map_f_mdclean)
         fsky = _fsky[i]
         cn = _cn[i]
