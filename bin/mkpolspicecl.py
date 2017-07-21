@@ -107,15 +107,14 @@ def mkCl(**kwargs):
         l_max= lmax
         _l = np.arange(l_max)
         wb_en = wb_en(_l)
-        flux_map_name = in_label+'_flux_%i-%i.fits'%(emin, emax)
+        flux_map_name = in_label+'_fluxmasked_%i-%i.fits'%(emin, emax)
         flux_map_f = os.path.join(GRATOOLS_OUT_FLUX, flux_map_name)
-        flux_map_f_mdclean = remove_monopole_dipole(flux_map_f)
+        flux_map_f_mdclean = remove_monopole_dipole(flux_map_f)#, mask_file=mask_f)
         flux_map = hp.read_map(flux_map_f_mdclean)
         fsky = _fsky[i]
         cn = _cn[i]
         if kwargs['show'] == True:
-            hp.mollview(flux_map_masked.filled(), title='f$_{sky}$ = %.3f'%fsky,
-                        min=1e-7, max=1e-4, norm='log')
+            hp.mollview(flux_map, title='f$_{sky}$ = %.3f'%fsky)
             plt.show()
         logger.info('fsky = '%fsky)
         nside = hp.npix2nside(len(flux_map))
@@ -135,7 +134,7 @@ def mkCl(**kwargs):
             if key == 'covfileout':
                  pol_dict[key] = os.path.join(out_folder,'%s_cov.fits'%out_name)
             if key == 'mapfile':
-                pol_dict[key] = flux_map_f
+                pol_dict[key] = flux_map_f.replace('.fits', '_mdclean.fits')
             if key == 'maskfile':
                 pol_dict[key] = mask_f
         config_file_name = 'pol_%s'%(out_name)
