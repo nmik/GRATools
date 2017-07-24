@@ -275,22 +275,32 @@ def fit_foreground_poisson(fore_map, data_map, n_guess=1., c_guess=0.1,
     return norm_min, igrb_min, _norm[0], _norm[-1], np.amin(_igrb), \
         np.amax(_igrb)
 
-def get_iso_integral_flux_map(e_min, e_max):
-    """discarded...
+def get_iso_integral_flux_map(iso_ascii_file, e_min, e_max, nside=512):
+    """Returns a isotropic map of the integral IGRB between emin and emax from 
+       'iso_P8R2_SOURCE_V6_v06.txt' file.
+
+       iso_ascii_file: str
+           Ascii file found here 
+           https://fermi.gsfc.nasa.gov/ssc/data/access/lat/BackgroundModels.html
+       emin: float
+           minimum energy of the bin [MeV]
+       emax: float
+           maximum energy of the bin [MeV]
+       nside: int
+           healpix nside parameter
     """
     isofile = os.path.join(GRATOOLS_CONFIG, 'models', 
                            'iso_P8R2_ULTRACLEANVETO_V6_v06.txt')
     from GRATools.utils.gFTools import iso_parse
-    e, difflux, diffluxerr = iso_parse(isofile)
+    e, difflux, diffluxerr = iso_parse(iso_ascii_file)
     index = np.where((e>e_min)*(e<e_max))
     erange = e[index]
     frange = difflux[index]
     f_e = xInterpolatedUnivariateSplineLinear(erange, frange)
-    emean = np.sqrt(e_min*e_max)
-    diffmean = f_e(np.sqrt(e_min*e_max))
-    intfmean = diffmean*emean
-    npix = hp.nside2npix(64)
-    intiso_map = np.full(npix, intfmean)
+    intf = f_e.integral(e_min, e_max)
+    logger.info('Isotropic Bkg %e [cm-2s-1]'%intf)
+    npix = hp.nside2npix(nside)
+    intiso_map = np.full(npix, intf)
     return intiso_map
 
 def find_outer_energies(en_val, en_arr):
