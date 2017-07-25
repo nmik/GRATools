@@ -87,6 +87,27 @@ def remove_monopole_dipole(map_file_name, mask_file=None):
     hp.write_map(map_file_name_clean, res )
     return map_file_name_clean
 
+def remove_multipole(map_file_name, lmax=10):
+    """Returns a map obtained from the one given and cleaned for monopole and
+       dipole.
+       
+       map_file_name : str
+          path and name of the map you want to clean for  monopole 
+          and dipole.
+       lmax : int
+          maximum multiple number upto which perform the removal
+    """
+    map_file_name_clean = map_file_name.replace('.fits', '_multiclean.fits')
+    flux_map = hp.read_map(map_file_name)
+    alm = hp.sphtfunc.map2alm(flux_map)
+    print alm
+    map_to_remove = hp.sphtfunc.alm2map(alm, hp.npix2nside(len(flux_map)))
+    hp.mollview(map_to_remove)
+    plt.show()
+    new_flux_map = flux_map - map_to_remove
+    hp.write_map(map_file_name_clean, new_flux_map)
+    return map_file_name_clean
+
 def pol_create_config(pol_dict, config_file_name):
     """Creates and returns PolSpice config ascii file.
     
@@ -248,7 +269,7 @@ def pol_cov_parse(pol_cov_out_file, wl_array=None, rebin=False, show=False):
          ax = fig.add_subplot(111)
          cax = ax.matshow(np.log10(np.abs(_cov)), origin='lower', 
                           aspect='auto', cmap='Spectral')
-         en_tick = list(np.logspace(0, np.log10(1500), 5).astype(int))
+         en_tick = list(np.logspace(0, np.log10(1500), 6).astype(int))
          ax.set_yticklabels(['']+en_tick)
          ax.set_xticklabels(['']+en_tick)
          plt.title('Covariance matrix')
