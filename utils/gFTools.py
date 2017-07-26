@@ -105,37 +105,36 @@ def cp_parse(cp_file):
     return np.array(_emin), np.array(_emax),np.array(_emean), \
         np.array(_cp), np.array(_cperr)
 
-def clcross_parse(cl_file):
-    """Parsing of the *_cps.txt files.
+def clEcross_parse(Ecross_file):
+    """Parsing of the *_polspiceEcross.txt files.
 
-       cl_file : str
-           This file is created by bin/mkpolspicecrosscl.py app.
+       Ecross_file : str
+           This file is created by bin/mkpolspiceEcross.py app.
     """
-    logger.info('loading Cp values from %s'%cl_file)
-    ff = open(cl_file, 'r')
-    _emin1, _emax1, _emean1, _cls, _clserr = [], [], [], [], []
-    _emin2, _emax2, _emean2 = [], [], []
+    logger.info('loading Cl values from %s'%Ecross_file)
+    ff = open(Ecross_file, 'r')
+    _emin1, _emax1, _emin2, _emax2 = [], [], [], []
+    _ls, _cls, _clserr = [], []
     for line in ff:
         if 'ENERGY1\t' in line:
-            emin1, emax1, emean1 = [float(item) for item in line.split()[1:]]
+            emin1, emax1, emin2, emax2 = [float(item) for item in \
+                                              line.split()[1:]]
             _emin1.append(emin1)
             _emax1.append(emax1)
-            _emean1.append(emean1)
-        if 'ENERGY2\t' in line:
-            emin2, emax2, emean2 = [float(item) for item in line.split()[1:]]
             _emin2.append(emin2)
             _emax2.append(emax2)
-            _emean2.append(emean2)
+        if 'multipole\t' in line:
+            l = np.array([float(item) for item in line.split()[1:]])
+            _ls.append(l)
         if 'Cl\t' in line:
             cl = np.array([float(item) for item in line.split()[1:]])
             _cls.append(cl)
         if 'Cl_ERR\t' in line:
             clerr = np.array([float(item) for item in line.split()[1:]])
-            _clserr.append(clerr)
-    ff.close()
-    return np.array(_emin1), np.array(_emax1),np.array(_emean1), \
-        np.array(_emin2), np.array(_emax2),np.array(_emean2), \
-        np.array(_cls), np.array(_clserr)
+            _clserr.append(clerr)  
+    f.close()
+    return np.array(_emin1), np.array(_emax1), np.array(_emin2), \
+        np.array(_emax2), np.array(_ls), np.array(_cls), np.array(_clerr)
 
 def clfore_parse(clfore_file):
     """Parsing of the *_forecls.txt files.
@@ -188,7 +187,8 @@ def cl_pol_parse(cl_file):
             cl_err = np.array([float(item) for item in line.split()[1:]])
             clerrs.append(cl_err)
     f.close()
-    return np.array(emin),np.array(emax),np.array(emean),np.array(ls),np.array(cls),  np.array(clerrs)
+    return np.array(emin),np.array(emax),np.array(emean),np.array(ls), \
+        np.array(cls),  np.array(clerrs)
 
 
 def get_cl_param(cl_param_file):
