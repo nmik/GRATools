@@ -21,7 +21,7 @@ import ast
 import argparse
 import numpy as np
 import healpy as hp
-
+from itertools import combinations
 
 __description__ = 'Makes the analysis'
 
@@ -35,8 +35,8 @@ from GRATools.utils.gPolSpice import *
 from GRATools.utils.logging_ import logger, startmsg
 from GRATools.utils.matplotlib_ import pyplot as plt
 from GRATools.utils.matplotlib_ import overlay_tag, save_current_figure
+from GRATools.utils.gWindowFunc import get_integral_wbeam
 
-GRATOOLS_OUT_FLUX = os.path.join(GRATOOLS_OUT, 'output_flux')
 
 formatter = argparse.ArgumentDefaultsHelpFormatter
 PARSER = argparse.ArgumentParser(description=__description__,
@@ -57,107 +57,107 @@ def mkCross(**kwargs):
     """                                      
     """
     get_var_from_file(kwargs['config'])
-    logger.info('Calculating PSF with gtpsf...')
-    dict_gtpsf = data.DICT_GTPSF
-    logger.info('Calculating Wbeam Function...')
-    out_wb_label = data.OUT_W_LABEL
-    
-    out_wb_txt = os.path.join(GRATOOLS_OUT, 'Wbeam_%s.txt'%out_wb_label)
-    if not os.path.exists(out_wb_txt):
-        from GRATools.utils.ScienceTools_ import gtpsf
-        gtpsf(dict_gtpsf)
-        from GRATools.utils.gWindowFunc import get_psf
-        psf_file = data.PSF_FILE
-        psf = get_psf(psf_file)
-        _l = np.arange(0, 1000)
-        from GRATools.utils.gWindowFunc import build_wbeam
-        wb = build_wbeam(psf, _l, out_wb_txt)
-    else:
-        from GRATools.utils.gWindowFunc import get_wbeam
-        wb = get_wbeam(out_wb_txt)
-    save_current_figure('Wbeam_%s.png'%out_wb_label, clear=True)
 
-    logger.info('Starting Cl analysis...')
-    in_label1 = data.IN_LABEL1
-    in_label2 = data.IN_LABEL2
-    mask_label1 = data.MASK_LABEL1
-    mask_label2 = data.MASK_LABEL2
-    in_label1 = in_label1 + '_' + mask_label1
-    in_label2 = in_label2 + '_' + mask_label2
-    out_label = data.OUT_LABEL
-    binning_label = data.BINNING_LABEL
-    mask_file1 = data.MASK_FILE1
-    mask_file2 = data.MASK_FILE2
-    cl_param_file1 = os.path.join(GRATOOLS_OUT, '%s_%s_parameters.txt' \
-                                     %(in_label1, binning_label))
-    cl_param_file2 = os.path.join(GRATOOLS_OUT, '%s_%s_parameters.txt' \
-                                     %(in_label2, binning_label))
-    from GRATools.utils.gFTools import get_cl_param
-    _emin, _emax, _emean, _f, _ferr, _cn, _fsky = get_cl_param(cl_param_file1)
-    _emin2, _emax2, _emean2, _f2, _ferr2, _cn2, _fsky2 = get_cl_param(cl_param_file2)
-    cl_txt = open(os.path.join(GRATOOLS_OUT, '%s_%s_polspicecross.txt' \
-                                   %(out_label, binning_label)), 'w')
-    for i, (emin, emax) in enumerate(zip(_emin, _emax)):
-        logger.info('Considering bin %.2f - %.2f ...'%(emin, emax))
-        mask_f1 = mask_file1
-        mask_f2 = mask_file2
-        if type(mask_file1) == list:
-            mask_f1 = mask_file1[i]
-        if type(mask_file2) == list:
-            mask_f2 = mask_file2[i]
-        gamma = data.WEIGHT_SPEC_INDEX
-        Im = (1/(1-gamma))*(emax**(1-gamma)-emin**(1-gamma))/(emax-emin)
-        eweightedmean = np.power(1/Im, 1/gamma)
-        cl_txt.write('ENERGY\t %.2f %.2f %.2f\n'%(emin, emax, eweightedmean))
-        l_max= 1000
-        _l = np.arange(l_max)
-        wb_en = wb.hslice(eweightedmean)(_l)
-        flux_map_name1 = in_label1+'_flux_%i-%i.fits'%(emin, emax)
-        flux_map_name2 = in_label2+'_flux_%i-%i.fits'%(emin, emax)
-        flux_map_f1 = os.path.join(GRATOOLS_OUT_FLUX, flux_map_name1)
-        flux_map_f2 = os.path.join(GRATOOLS_OUT_FLUX, flux_map_name2)
-        flux_map1 = hp.read_map(flux_map_f1)
-        flux_map2 = hp.read_map(flux_map_f2)
-        if kwargs['show'] == True:
-            hp.mollview(flux_map_masked.filled(), title='f$_{sky}$ = %.3f'%fsky,
-                        min=1e-7, max=1e-4, norm='log')
-            plt.show()
-        nside1 = hp.npix2nside(len(flux_map1))
-        nside2 = hp.npix2nside(len(flux_map2))
-        wpix1 = hp.sphtfunc.pixwin(nside1)[:l_max]
-        wpix2 = hp.sphtfunc.pixwin(nside2)[:l_max]
-        out_name = '%s_%i-%i' %(out_label, emin, emax)
+    lmax = data.LMAX
+    _l = np.arange(0, lmax)
+    gamma = data.WEIGHT_SPEC_INDEX    
+    logger.info('Calculating energy spectrum...')
+    from GRATools.utils.gWindowFunc import get_powerlaw_spline
+    energy_spec = get_powerlaw_spline(gamma)
+
+    wbeamo_list = data.WBEAM_LIST
+    mask_list = data.MASK_LIST
+    maps_list = data.MAPS_LIST
+    ebin_list = data.EBINS
+    index = np.arange(len(maps_list))
+    index_comb = list(combinations(index, r=2))
+    maps_comb = list(combinations(maps_list, r=2))
+    mask_comb =  list(combinations(mask_list, r=2))
+    wbeam_comb =  list(combinations(wbeamo_list, r=2))
+    ebin_comb = list(combinations(ebin_list, r=2))
+    outfile_label = data.OUTFILE_LABEL
+    cl_txt = open(os.path.join(GRATOOLS_OUT, '%s_polspiceEcross.txt' \
+                                   %outfile_label), 'w')
+    for i, (map1, map2) in enumerate(maps_comb):
+        logger.info('Cross correlation:')
+        logger.info('>>> Map %i: %s' %(index_comb[i][0], map1))
+        logger.info('>>> Map %i: %s' %(index_comb[i][1], map2))
+        emin1, emax1 = ebin_comb[i][0][0], ebin_comb[i][0][1]
+        emin2, emax2 = ebin_comb[i][1][0], ebin_comb[i][1][1]
+        mask1_f = mask_comb[i][0]
+        mask2_f = mask_comb[i][1]
+        mask_f = ''
+        mask1 = hp.read_map(mask1_f)
+        mask2 = hp.read_map(mask2_f)
+        nside = hp.npix2nside(len(mask1))
+        if np.sum(mask1) >  np.sum(mask1):
+            logger.info('taking Mask %i'%index_comb[i][1])
+            mask_f = mask2_f
+        else:
+            logger.info('taking Mask %i'%index_comb[i][0])
+            mask_f = mask1_f
+        out_label = '%i-%i_%i-%i'%(emin1, emax1, emin2, emax2)
+        cl_txt.write('ENERGY\t %.2f %.2f - %.2f %.2f\n'
+                     %(emin1, emax1, emin2, emax2))
+        wb_en1 = get_integral_wbeam(wbeam_comb[i][0], energy_spec, emin1, emax1)
+        wb_en2= get_integral_wbeam(wbeam_comb[i][1], energy_spec, emin2, emax2)
+        wb_en1 = wb_en1(_l)
+        wb_en2 = wb_en2(_l)
+        wpix1 = wpix2 = hp.sphtfunc.pixwin(nside)[:lmax]
+        wl = np.sqrt(wb_en1*wpix1*wb_en2*wpix2)
+        #plt.plot(_l, wl**2, label='wb1*wb2')
+        #plt.plot(_l, wb_en1, label='wb1')
+        #plt.plot(_l, wb_en2, label='wb2')
+        #plt.legend()
+        #plt.show()
+        cn = 0
+        
         out_folder =  os.path.join(GRATOOLS_OUT, 'output_pol')
-        if not os.path.exists(out_folder):
-            os.makedirs(out_folder)
         pol_dict = data.POLCEPICE_DICT
         for key in pol_dict:
             if key == 'clfile':
-                pol_dict[key] = os.path.join(out_folder,'%s_cl.txt'%out_name)
+                pol_dict[key] = os.path.join(out_folder,'%s_Ecrosscl.txt'%out_label)
             if key == 'cl_outmap_file':
-                pol_dict[key] = os.path.join(out_folder,'%s_clraw.txt'%out_name)
+                pol_dict[key] = os.path.join(out_folder,'%s_Ecrossclraw.txt'%out_label)
             if key == 'covfileout':
-                 pol_dict[key] = os.path.join(out_folder,'%s_cov.fits'%out_name)
+                 pol_dict[key] = os.path.join(out_folder,'%s_Ecrosscov.fits'%out_label)
             if key == 'mapfile':
-                pol_dict[key] = flux_map_f1
+                pol_dict[key] = map1
             if key == 'mapfile2':
-                pol_dict[key] = flux_map_f2
+                pol_dict[key] = map2
             if key == 'maskfile':
-                pol_dict[key] = mask_f1
+                pol_dict[key] = mask_f
             if key == 'maskfile2':
-                pol_dict[key] = mask_f2
-        config_file_name = 'pol_%s'%(out_name)
-        _l, _cl, _cl_err = pol_cl_calculation(pol_dict, config_file_name)        
-        wl = wb_en*np.sqrt(wpix1*wpix2)
-        _cl = _cl/(wl**2)
+                pol_dict[key] = mask_f
+        config_file_name = 'pol_Ecross_%s'%(out_label)
+        if os.path.exists(os.path.join(out_folder,'%s_Ecrosscl.txt'%out_label)) and \
+                os.path.exists(os.path.join(out_folder,'%s_Ecrosscov.fits'%out_label)):
+            logger.info('ATT: Retriving power spectrum...')
+            _ll, _cl, _clerr = pol_cl_parse(os.path.join(out_folder,
+                                            '%s_Ecrosscl.txt'%out_label),
+                                             os.path.join(out_folder,
+                                            '%s_Ecrosscov.fits'%out_label),
+                                            raw_corr=(cn, wl),
+                                            rebin=True)
+            logger.info('... and covariance matrix.')
+            _cov = pol_cov_parse(os.path.join(out_folder,
+                                              '%s_Ecrosscov.fits'%out_label),
+                                 wl_array=wl,
+                                 rebin=True, show=True)
+        else:
+            _ll, _cl, _clerr, _cov = pol_cl_calculation(pol_dict, 
+                                                  config_file_name,
+                                                  raw_corr=(cn, wl),
+                                                  rebin=True,show=True)
+        cl_txt.write('multipole\t%s\n'%str(list(_ll)).replace('[',''). \
+                         replace(']','').replace(', ', ' '))
         cl_txt.write('Cl\t%s\n'%str(list(_cl)).replace('[',''). \
                          replace(']','').replace(', ', ' '))
-        #_cl_err = np.sqrt(2./((2*_l+1)*fsky))*(_cl+(cn/wl**2))
-        cl_txt.write('Cl_ERR\t%s\n\n'%str(list(_cl_err)).replace('[',''). \
+        cl_txt.write('Cl_ERR\t%s\n\n'%str(list(_clerr)).replace('[',''). \
                          replace(']','').replace(', ', ' '))
     cl_txt.close()
-    logger.info('Created %s'%(os.path.join(GRATOOLS_OUT,'%s_%s_polspicecross.txt'
-                                           %(out_label, binning_label))))
+    logger.info('Created %s'%(os.path.join(GRATOOLS_OUT,'%s_polspiceEcross.txt'
+                                           %outfile_label)))
 
 
 
