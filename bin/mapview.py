@@ -39,7 +39,7 @@ PARSER.add_argument('--udgrade', type=int, default=512,
 PARSER.add_argument('--optimized', type=ast.literal_eval, choices=[True, False],
                     default=False,
                     help='set min and max of the map in mollview')
-PARSER.add_argument('--smoothing', type=float,default=1.,
+PARSER.add_argument('--smoothing', type=float,default=None,
                     help='Gaussian beam fwhm for the smoothing (in deg)')
 PARSER.add_argument('--counts', type=ast.literal_eval, choices=[True, False],
                     default=False,
@@ -53,7 +53,9 @@ def maps_view(**kwargs):
     """
     input_file = kwargs['infile']
     healpix_maps = hp.read_map(input_file, field=kwargs['field'])
-    healpix_maps = hp.sphtfunc.smoothing(healpix_maps, fwhm=np.radians(kwargs['smoothing']))
+    if kwargs['smoothing'] is not None:
+        healpix_maps = hp.sphtfunc.smoothing(healpix_maps, 
+                                        fwhm=np.radians(kwargs['smoothing']))
     if not os.path.exists(input_file):
         abort("Map %s not found!"%input_file)
     t = os.path.basename(input_file)
@@ -76,15 +78,15 @@ def maps_view(**kwargs):
         if kwargs['optimized'] == True:
             logger.info('Optimizing...')
             hp.mollview(healpix_maps, title=t.replace('.fits',''), \
-                            coord='G', min=-5e-6, max=5e-6)
+                            coord='G', min=-5e-7, max=1e-7)
             hp.graticule()
-            overlay_tag(color='silver', x=0.45)
+            #overlay_tag(color='silver', x=0.45)
             plt.show()
         else:
             hp.mollview(healpix_maps, title=t.replace('.fits',''), \
                             coord='G')
             hp.graticule()
-            overlay_tag(color='silver', x=0.45)
+            #overlay_tag(color='silver', x=0.45)
             plt.show()
     else:
         for i, maps in enumerate(healpix_maps):
