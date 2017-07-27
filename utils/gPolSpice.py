@@ -67,14 +67,29 @@ def get_cl_model_SFG_spline(model_file, log=True):
         model_spline = xInterpolatedUnivariateSplineLinear(_l, _cl)
     return model_spline
 
-
+def remove_monopole(map_file_name, mask_file=None):
+    """Returns a map obtained from the one given and cleaned for monopole and
+       dipole.
+       
+       map_file_name : str
+          path and name of the map you want to clean for monopole.
+    """
+    map_file_name_clean = map_file_name.replace('.fits', '_mclean.fits')
+    flux_map = hp.read_map(map_file_name)
+    if mask_file is not None:
+        mask = hp.read_map(mask_file)
+        _index = np.where(mask<1e-30)[0] 
+        flux_map[_index] = hp.UNSEEN
+    res = hp.pixelfunc.remove_monopole(flux_map, copy=True, fitval=False)
+    hp.write_map(map_file_name_clean, res )
+    return map_file_name_clean
 
 def remove_monopole_dipole(map_file_name, mask_file=None):
     """Returns a map obtained from the one given and cleaned for monopole and
        dipole.
        
        map_file_name : str
-          path and name of the map you want to clean for  monopole 
+          path and name of the map you want to clean for monopole 
           and dipole.
     """
     map_file_name_clean = map_file_name.replace('.fits', '_mdclean.fits')
@@ -280,7 +295,6 @@ def pol_cov_parse(pol_cov_out_file, wl_array=None, rebin=False, show=False):
          save_current_figure(os.path.basename(pol_cov_out_file).replace('.fits',
                                                                        ''))
     return _cov
-
 
 def pol_cl_calculation(pol_dict, config_file_name, raw_corr=None, rebin=False, 
                        show=False):
