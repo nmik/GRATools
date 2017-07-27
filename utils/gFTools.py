@@ -81,6 +81,43 @@ def csi_parse(csi_file):
     f.close()
     return np.array(emin), np.array(emax), np.array(emean), np.array(csi), np.array(theta), np.array(Rs)
 
+def cpEcross_parse(cp_file):
+    """Parsing of the *_cps.txt files
+
+       cp_file : str
+           This file is created by bin/mkcpsEcross.py app.
+    """
+    logger.info('loading Cp values from %s'%cp_file)
+    ff = open(cp_file, 'r')
+    _emin, _emax = [], []
+    _emin1, _emax1 = [], [] 
+    _emin2, _emax2 = [], [] 
+    _cp, _cperr = [], []
+    for line in ff:
+        if 'ENERGY' in line:
+            emin, emax = [float(item) for item in \
+                              line.split()[1:]]
+            _emin.append(emin)
+            _emax.append(emax)
+    ff.close()
+    ff = open(cp_file, 'r')
+    for line in ff:
+        try:
+            emin1, emax1, emin2, emax2, cp, cperr = [float(item) \
+                                                    for item in line.split()]
+            _emin1.append(emin1)
+            _emax1.append(emax1)
+            _emin2.append(emin2)
+            _emax2.append(emax2)
+            _cp.append(cp)
+            _cperr.append(cperr)
+        except:
+            pass
+    ff.close()
+    return  np.array(_emin), np.array(_emax), np.array(_emin1), \
+        np.array(_emax1), np.array(_emin2), \
+        np.array(_emax2), np.array(_cp), np.array(_cperr)
+
 def cp_parse(cp_file):
     """Parsing of the *_cps.txt files
 
@@ -105,18 +142,18 @@ def cp_parse(cp_file):
     return np.array(_emin), np.array(_emax),np.array(_emean), \
         np.array(_cp), np.array(_cperr)
 
-def clEcross_parse(Ecross_file):
+def clEcross_pol_parse(Ecross_file):
     """Parsing of the *_polspiceEcross.txt files.
 
        Ecross_file : str
            This file is created by bin/mkpolspiceEcross.py app.
     """
     logger.info('loading Cl values from %s'%Ecross_file)
-    ff = open(Ecross_file, 'r')
+    f = open(Ecross_file, 'r')
     _emin1, _emax1, _emin2, _emax2 = [], [], [], []
-    _ls, _cls, _clserr = [], []
-    for line in ff:
-        if 'ENERGY1\t' in line:
+    _ls, _cls, _clserr = [], [], []
+    for line in f:
+        if 'ENERGY' in line:
             emin1, emax1, emin2, emax2 = [float(item) for item in \
                                               line.split()[1:]]
             _emin1.append(emin1)
@@ -134,7 +171,7 @@ def clEcross_parse(Ecross_file):
             _clserr.append(clerr)  
     f.close()
     return np.array(_emin1), np.array(_emax1), np.array(_emin2), \
-        np.array(_emax2), np.array(_ls), np.array(_cls), np.array(_clerr)
+        np.array(_emax2), np.array(_ls), np.array(_cls), np.array(_clserr)
 
 def clfore_parse(clfore_file):
     """Parsing of the *_forecls.txt files.
