@@ -149,8 +149,6 @@ def main():
         from GRATools.utils.gForeground import get_iso_integral_flux_map
         iso_map = get_iso_integral_flux_map(isofile, e_min, e_max)
         iso_src_map = iso_map + src_templ_map
-        pc.dump(iso_src_map,
-                 open('SourceTempl_prova.pkl', 'wb'))     
         mask_f =  os.path.join(GRATOOLS_CONFIG, 
                               'fits/Mask_gp30.fits')
         mask = hp.read_map(mask_f)
@@ -162,7 +160,7 @@ def main():
         hp.graticule()
         plt.show()
         
-   
+        
 
 
 if __name__ == '__main__':
