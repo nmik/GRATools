@@ -43,6 +43,8 @@ PARSER = argparse.ArgumentParser(description=__description__,
                                  formatter_class=formatter)
 PARSER.add_argument('--config', type=str, required=True,
                     help='the input configuration file')
+PARSER.add_argument('--multiclean', type=int, default=None,
+             help='if True removes all the multipoles up to the one wanted')
 PARSER.add_argument('--show', type=ast.literal_eval, choices=[True, False],
                     default=False,
                     help='True if you want to see the maps')
@@ -111,7 +113,13 @@ def mkCl(**kwargs):
         flux_map_name = in_label+'_fluxmasked_%i-%i.fits'%(emin, emax)
         flux_map_f = os.path.join(GRATOOLS_OUT_FLUX, flux_map_name)
         flux_map_f_mdclean = remove_monopole_dipole(flux_map_f)
-        flux_map = hp.read_map(flux_map_f_mdclean)
+        # Up to l=n cleaning from MASKED map (correction for fsky discarded)
+        if kwargs['multiclean'] is not None:
+            flux_map_f_multiclean =  remove_multipole(flux_map_f_mdclean, 
+                                        lmax=kwargs['multiclean'])
+            flux_map = hp.read_map(flux_map_f_multiclean)
+        else:
+            flux_map = hp.read_map(flux_map_f_mdclean)
         fsky = _fsky[i]
         cn = _cn[i]
         if kwargs['show'] == True:
@@ -135,7 +143,8 @@ def mkCl(**kwargs):
             if key == 'covfileout':
                  pol_dict[key] = os.path.join(out_folder,'%s_cov.fits'%out_name)
             if key == 'mapfile':
-                pol_dict[key] = flux_map_f.replace('.fits', '_mdclean.fits')
+                pol_dict[key] = flux_map_f.replace('.fits', 
+                                                   '_mdclean.fits')
             if key == 'maskfile':
                 pol_dict[key] = mask_f
         config_file_name = 'pol_%s'%(out_name)
