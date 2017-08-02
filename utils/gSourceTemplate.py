@@ -114,11 +114,25 @@ def build_src_template(cat_file, psf_file, emin, emax, b_cut=20, nside=512):
             INT_FLUXES.append(integral_flux_bin)
     logger.info('Building...')
     src_map = src_builder(psf_th, nside, GLON, GLAT, INT_FLUXES)
-    logger.info('Done!...')
+    logger.info('Done!')
     return src_map
 
 @jit
 def src_builder(psf_spline, nside, glon_, glat_, intflux_): 
+    """Loop on every source and build the template of surces
+    
+       psf_spline: spline 
+           spline of the PSF as a function of theta (given by Fermi IRFs)
+       nside: int
+           healpix nside parameter
+       glon_: numpy array
+           array of all the galactic longitutes of the sources
+       glat_: numpy array
+           array of all the galactic latitudes of the sources
+       intflux_: numpy array
+           array of all the total integral flux (in the considered energy
+           bin) of the sources
+    """
     x, y, z = hp.rotator.dir2vec(glon_, glat_, lonlat=True)
     src_pix = hp.pixelfunc.vec2pix(nside, x, y, z)
     isomap = np.zeros(hp.nside2npix(nside))
@@ -150,7 +164,7 @@ def main():
         iso_map = get_iso_integral_flux_map(isofile, e_min, e_max)
         iso_src_map = iso_map + src_templ_map
         mask_f =  os.path.join(GRATOOLS_CONFIG, 
-                              'fits/Mask_gp30.fits')
+                              'fits/Mask_src1rev_gp30.fits')
         mask = hp.read_map(mask_f)
         iso_src_map_masked = hp.ma(iso_src_map)
         iso_src_map_masked.mask = np.logical_not(mask)
