@@ -97,6 +97,7 @@ def mkCl(**kwargs):
     _emin, _emax, _emean, _f, _ferr, _cn, _fsky = get_cl_param(cl_param_file)
     cl_txt = open(os.path.join(GRATOOLS_OUT, '%s_%s_polspicecls.txt' \
                                    %(out_label, binning_label)), 'w')
+    monopoles = []
     from GRATools.utils.gWindowFunc import get_integral_wbeam
     for i, (emin, emax) in enumerate(zip(_emin, _emax)):
         logger.info('Considering bin %.2f - %.2f ...'%(emin, emax))
@@ -112,7 +113,8 @@ def mkCl(**kwargs):
         # monopole and dipole cleaning from MASKED map, bad value = UNSEEN
         flux_map_name = in_label+'_fluxmasked_%i-%i.fits'%(emin, emax)
         flux_map_f = os.path.join(GRATOOLS_OUT_FLUX, flux_map_name)
-        flux_map_f_mdclean = remove_monopole_dipole(flux_map_f)
+        flux_map_f_mdclean, mono = remove_monopole_dipole(flux_map_f)
+        monopoles.append(mono)
         # Up to l=n cleaning from MASKED map (correction for fsky discarded)
         if kwargs['multiclean'] is not None:
             flux_map_f_multiclean =  remove_multipole(flux_map_f_mdclean, 
@@ -172,6 +174,8 @@ def mkCl(**kwargs):
         cl_txt.write('Cl\t%s\n'%str(list(_cl)).replace('[',''). \
                          replace(']','').replace(', ', ' '))
         cl_txt.write('Cl_ERR\t%s\n\n'%str(list(_clerr)).replace('[',''). \
+                         replace(']','').replace(', ', ' '))
+    cl_txt.write('Monopoles\t%s\n\n'%str(monopoles).replace('[',''). \
                          replace(']','').replace(', ', ' '))
     cl_txt.close()
     logger.info('Created %s'%(os.path.join(GRATOOLS_OUT,'%s_%s_polspicecls.txt'
