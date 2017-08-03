@@ -99,7 +99,7 @@ def remove_monopole_dipole(map_file_name, mask_file=None):
         _index = np.where(mask<1e-30)[0] 
         flux_map[_index] = hp.UNSEEN
     res, mono, dipo = hp.pixelfunc.remove_dipole(flux_map, copy=True, 
-                                                 fitval=True)
+                                                 fitval=True, verbose=True)
     hp.write_map(map_file_name_clean, res )
     return map_file_name_clean, mono
 
