@@ -98,9 +98,10 @@ def remove_monopole_dipole(map_file_name, mask_file=None):
         mask = hp.read_map(mask_file)
         _index = np.where(mask<1e-30)[0] 
         flux_map[_index] = hp.UNSEEN
-    res = hp.pixelfunc.remove_dipole(flux_map, copy=True, fitval=False)
+    res, mono, dipo = hp.pixelfunc.remove_dipole(flux_map, copy=True, 
+                                                 fitval=True)
     hp.write_map(map_file_name_clean, res )
-    return map_file_name_clean
+    return map_file_name_clean, mono
 
 def remove_multipole(map_file_name, lmax=10):
     """Returns a map obtained from the one given and cleaned for monopole and
