@@ -97,7 +97,7 @@ def mkCl(**kwargs):
     _emin, _emax, _emean, _f, _ferr, _cn, _fsky = get_cl_param(cl_param_file)
     cl_txt = open(os.path.join(GRATOOLS_OUT, '%s_%s_polspicecls.txt' \
                                    %(out_label, binning_label)), 'w')
-    monopoles = []
+    monopoles, monopoles_err = [], []
     from GRATools.utils.gWindowFunc import get_integral_wbeam
     for i, (emin, emax) in enumerate(zip(_emin, _emax)):
         logger.info('Considering bin %.2f - %.2f ...'%(emin, emax))
@@ -115,6 +115,8 @@ def mkCl(**kwargs):
         flux_map_f = os.path.join(GRATOOLS_OUT_FLUX, flux_map_name)
         flux_map_f_mdclean, mono = remove_monopole_dipole(flux_map_f)
         monopoles.append(mono)
+        mono_err = np.sqrt(2/_fsky[i])*(mono+_cn[i])
+        monopoles_err.append(mono_err)
         # Up to l=n cleaning from MASKED map (correction for fsky discarded)
         if kwargs['multiclean'] is not None:
             flux_map_f_multiclean =  remove_multipole(flux_map_f_mdclean, 
@@ -145,8 +147,7 @@ def mkCl(**kwargs):
             if key == 'covfileout':
                  pol_dict[key] = os.path.join(out_folder,'%s_cov.fits'%out_name)
             if key == 'mapfile':
-                pol_dict[key] = flux_map_f.replace('.fits', 
-                                                   '_mdclean.fits')
+                pol_dict[key] = flux_map_f#_mdclean
             if key == 'maskfile':
                 pol_dict[key] = mask_f
         config_file_name = 'pol_%s'%(out_name)
@@ -176,6 +177,8 @@ def mkCl(**kwargs):
         cl_txt.write('Cl_ERR\t%s\n\n'%str(list(_clerr)).replace('[',''). \
                          replace(']','').replace(', ', ' '))
     cl_txt.write('Monopoles\t%s\n\n'%str(monopoles).replace('[',''). \
+                         replace(']','').replace(', ', ' '))
+    cl_txt.write('Monopoles_ERR\t%s\n\n'%str(monopoles_err).replace('[',''). \
                          replace(']','').replace(', ', ' '))
     cl_txt.close()
     logger.info('Created %s'%(os.path.join(GRATOOLS_OUT,'%s_%s_polspicecls.txt'
