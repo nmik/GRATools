@@ -38,6 +38,9 @@ PARSER.add_argument('--config', type=str, required=True,
 PARSER.add_argument('--srcmask', type=ast.literal_eval, choices=[True, False],
                     default=False,
                     help='sources mask activated')
+PARSER.add_argument('--extsrcmask', type=ast.literal_eval, 
+                    choices=[True, False], default=False,
+                    help='extended sources mask activated')
 PARSER.add_argument('--srcmaskweight', type=ast.literal_eval, 
                     choices=[True, False],
                     default=False,
@@ -92,6 +95,18 @@ def mkMask(**kwargs):
             bad_pix += list(np.where(~mask)[0])
         else:
             bad_pix += mask_src(cat_file, src_mask_rad, nside)
+    if kwargs['extsrcmask'] == True:
+        from GRATools.utils.gMasks import mask_extsrc
+        src_mask_rad = data.SRC_MASK_RAD
+        cat_file = data.SRC_CATALOG
+        if kwargs['reversesrcmask'] == True:
+            logger.info('Reversing source mask activated...')
+            allpix = np.arange(npix)
+            srcmask = np.array(mask_extsrc(cat_file, src_mask_rad, nside))
+            mask = np.in1d(allpix, srcmask)
+            bad_pix += list(np.where(~mask)[0])
+        else:
+            bad_pix += mask_extsrc(cat_file, src_mask_rad, nside)
     if kwargs['srcmaskweight'] == True:
         from GRATools.utils.gMasks import mask_src_weighted
         src_mask_rad = data.SRC_MASK_RAD
