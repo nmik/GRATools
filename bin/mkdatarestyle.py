@@ -102,7 +102,6 @@ def mkRestyle(**kwargs):
     logger.info('Starting the restyling...')
     get_var_from_file(kwargs['config'])
     fore_files = data.FORE_FILES_LIST
-    crbkg_file = data.CRBKG_FILE
     macro_bins = data.MACRO_BINS
     gamma = data.POWER_LOW_INDEX
     out_label = data.OUT_LABEL
