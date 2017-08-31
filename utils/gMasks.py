@@ -56,6 +56,42 @@ def mask_src(cat_file, MASK_S_RAD, NSIDE):
     src_cat.close()
     return BAD_PIX_SRC
 
+def mask_extsrc(cat_file, MASK_S_RAD, NSIDE):
+    """Returns the 'bad pixels' defined by the position of a source and a 
+       certain radius away from that point.
+
+       cat_file: str
+           .fits file of the sorce catalog
+       MASK_S_RAD: float
+           radius around each source definig bad pixels to mask
+       NSIDE: int
+           healpix nside parameter
+    """
+    logger.info('Mask for extended sources activated')
+    src_cat = pf.open(cat_file)
+    NPIX = hp.pixelfunc.nside2npix(NSIDE)
+    CAT_EXTENDED = src_cat['ExtendedSources']
+    BAD_PIX_SRC = []
+    EXT_SOURCES = CAT_EXTENDED.data
+    src_cat.close()
+    for i, src in enumerate(EXT_SOURCES):
+        NAME = EXT_SOURCES[i][0]
+        GLON = EXT_SOURCES[i][4]
+        GLAT = EXT_SOURCES[i][5]
+        if 'LMC' in NAME or 'CenA Lobes' in NAME:
+            x, y, z = hp.rotator.dir2vec(GLON,GLAT,lonlat=True)
+            b_pix= hp.pixelfunc.vec2pix(NSIDE, x, y, z)
+            BAD_PIX_SRC.append(b_pix) 
+            radintpix = hp.query_disc(NSIDE, (x, y, z), np.radians(10))
+            BAD_PIX_SRC.extend(radintpix)
+        else:
+            x, y, z = hp.rotator.dir2vec(GLON,GLAT,lonlat=True)
+            b_pix = hp.pixelfunc.vec2pix(NSIDE, x, y, z)
+            BAD_PIX_SRC.append(b_pix) 
+            radintpix = hp.query_disc(NSIDE, (x, y, z), np.radians(5))
+            BAD_PIX_SRC.extend(radintpix)
+    return BAD_PIX_SRC
+
 def mask_gp(MASK_GP_LAT, NSIDE):
     """Returns the 'bad pixels' around the galactic plain .
 
@@ -175,7 +211,6 @@ def mask_src_weighted(cat_file, ENERGY, NSIDE):
        NSIDE: int
           healpix nside parameter
     """
-    import pandas as pd
     from GRATools.utils.gWindowFunc import get_psf_ref
     psf_ref_file = os.path.join(GRATOOLS_CONFIG, 'ascii/PSF_UCV_PSF1.txt')
     src_cat = pf.open(cat_file)
