@@ -4,7 +4,7 @@
 # On behalf of the Fermi-LAT Collaboration.                                    #
 #                                                                              #
 # This program is free software; you can redistribute it and/or modify         #
-# it under the terms of the GNU GengReral Public License as published by       #
+# it under the terms of the GNU General Public License as published by       #
 # the Free Software Foundation; either version 3 of the License, or            #
 # (at your option) any later version.                                          #
 #                                                                              #
@@ -42,8 +42,8 @@ def mask_src(cat_file, MASK_S_RAD, NSIDE):
     SOURCES = CAT.data
     RADrad = MASK_S_RAD*np.pi/180.
     for i in range (0,len(SOURCES)-1):
-        GLON = SOURCES[i][3]
-        GLAT = SOURCES[i][4]
+        GLON = SOURCES.field('GLON')[i]
+        GLAT = SOURCES.field('GLAT')[i]
         x, y, z = hp.rotator.dir2vec(GLON,GLAT,lonlat=True)
         b_pix= hp.pixelfunc.vec2pix(NSIDE, x, y, z)
         BAD_PIX_SRC.append(b_pix) 
@@ -75,20 +75,20 @@ def mask_extsrc(cat_file, MASK_S_RAD, NSIDE):
     EXT_SOURCES = CAT_EXTENDED.data
     src_cat.close()
     for i, src in enumerate(EXT_SOURCES):
-        NAME = EXT_SOURCES[i][0]
-        GLON = EXT_SOURCES[i][4]
-        GLAT = EXT_SOURCES[i][5]
+        NAME = EXT_SOURCES.field('SourceName')[i]
+        GLON = EXT_SOURCES.field('GLON')[i]
+        GLAT = EXT_SOURCES.field('GLAT')[i]
         if 'LMC' in NAME or 'CenA Lobes' in NAME:
             x, y, z = hp.rotator.dir2vec(GLON,GLAT,lonlat=True)
             b_pix= hp.pixelfunc.vec2pix(NSIDE, x, y, z)
             BAD_PIX_SRC.append(b_pix) 
-            radintpix = hp.query_disc(NSIDE, (x, y, z), np.radians(10))
+            radintpix = hp.query_disc(NSIDE, (x, y, z), np.radians(5))
             BAD_PIX_SRC.extend(radintpix)
         else:
             x, y, z = hp.rotator.dir2vec(GLON,GLAT,lonlat=True)
             b_pix = hp.pixelfunc.vec2pix(NSIDE, x, y, z)
             BAD_PIX_SRC.append(b_pix) 
-            radintpix = hp.query_disc(NSIDE, (x, y, z), np.radians(5))
+            radintpix = hp.query_disc(NSIDE, (x, y, z), np.radians(2.5))
             BAD_PIX_SRC.extend(radintpix)
     return BAD_PIX_SRC
 
@@ -241,8 +241,8 @@ def mask_src_weighted(cat_file, ENERGY, NSIDE):
     logger.info('-> 5deg around the remaining')
     for i, src in enumerate(EXT_SOURCES):
         NAME = EXT_SOURCES[i][0]
-        GLON = EXT_SOURCES[i][4]
-        GLAT = EXT_SOURCES[i][5]
+        GLON = EXT_SOURCES.field('GLON')[i]
+        GLAT = EXT_SOURCES.field('GLAT')[i]
         if 'LMC' in NAME or 'CenA Lobes' in NAME:
             x, y, z = hp.rotator.dir2vec(GLON,GLAT,lonlat=True)
             b_pix= hp.pixelfunc.vec2pix(NSIDE, x, y, z)
@@ -257,8 +257,8 @@ def mask_src_weighted(cat_file, ENERGY, NSIDE):
             BAD_PIX_SRC.extend(radintpix)
     logger.info('Flux-weighted mask for sources activated')
     for i, src in enumerate(SOURCES):
-        GLON = SOURCES[i][3]
-        GLAT = SOURCES[i][4]
+        GLON = SOURCES.field('GLON')[i]
+        GLAT = SOURCES.field('GLAT')[i]
         x, y, z = hp.rotator.dir2vec(GLON,GLAT,lonlat=True)
         b_pix= hp.pixelfunc.vec2pix(NSIDE, x, y, z)
         BAD_PIX_SRC.append(b_pix) 
