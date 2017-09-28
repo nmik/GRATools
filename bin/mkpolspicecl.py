@@ -80,7 +80,7 @@ def mkCl(**kwargs):
         from GRATools.utils.gWindowFunc import get_psf
         psf_file = data.PSF_FILE
         psf = get_psf(psf_file)
-        _l = np.arange(0, 1000)
+        #_l = np.arange(0, 1500)
         from GRATools.utils.gWindowFunc import build_wbeam
         wb = build_wbeam(psf, _l, out_wb_txt)
     else:
