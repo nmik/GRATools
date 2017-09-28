@@ -21,6 +21,7 @@ import pyfits as pf
 from GRATools import GRATOOLS_CONFIG
 from GRATools.utils.logging_ import logger, abort
 from GRATools.utils.matplotlib_ import pyplot as plt
+from GRATools.utils.gWindowFunc import get_psf_ref
 
 
 def mask_src(cat_file, MASK_S_RAD, NSIDE):
@@ -75,7 +76,7 @@ def mask_extsrc(cat_file, MASK_S_RAD, NSIDE):
     EXT_SOURCES = CAT_EXTENDED.data
     src_cat.close()
     for i, src in enumerate(EXT_SOURCES):
-        NAME = EXT_SOURCES.field('SourceName')[i]
+        NAME = EXT_SOURCES.field('Source_Name')[i]
         GLON = EXT_SOURCES.field('GLON')[i]
         GLAT = EXT_SOURCES.field('GLAT')[i]
         if 'LMC' in NAME or 'CenA Lobes' in NAME:
@@ -199,7 +200,7 @@ def mask_hemi_west(NSIDE):
             BAD_PIX_HEMI_W.append(iii[i])
     return BAD_PIX_HEMI_W
 
-def mask_src_weighted(cat_file, ENERGY, NSIDE):
+def mask_src_weighted_custom(cat_file, ENERGY, NSIDE):
     """Returns the 'bad pixels' defined by the position of a source and a 
        certain radius away from that point. The radii increase with the 
        brightness and rescaled by a factor between 1 and 0.3 shaped as the PSF.
@@ -211,12 +212,64 @@ def mask_src_weighted(cat_file, ENERGY, NSIDE):
        NSIDE: int
           healpix nside parameter
     """
-    from GRATools.utils.gWindowFunc import get_psf_ref
     psf_ref_file = os.path.join(GRATOOLS_CONFIG, 'ascii/PSF_UCV_PSF1.txt')
     src_cat = pf.open(cat_file)
     NPIX = hp.pixelfunc.nside2npix(NSIDE)
+    CAT = src_cat[1]
+    BAD_PIX_SRC = []
+    SOURCES = CAT.data
+    src_cat.close()
+    psf_ref = get_psf_ref(psf_ref_file)
+    psf_en = psf_ref(ENERGY)
+    psf_min, psf_max =  psf_ref.y[5], psf_ref.y[-1] 
+    norm_min, norm_max = 1, 0.3
+    norm = norm_min + psf_en*((norm_max - norm_min)/(psf_max - psf_min)) -\
+        psf_min*((norm_max - norm_min)/(psf_max - psf_min))
+    logger.info('Normalization of radii due to energy: %.3f'%norm)
+    logger.info('Psf(%.2f)= %.2f'%(ENERGY, psf_en))
+    FLUX = np.log10(SOURCES.field('eflux1000'))
+    flux_min, flux_max = min(FLUX), max(FLUX)
+    rad_min, rad_max = 1, 5.
+    RADdeg = rad_min + FLUX*((rad_max - rad_min)/(flux_max - flux_min)) -\
+        flux_min*((rad_max - rad_min)/(flux_max - flux_min))
+    RADrad = np.radians(RADdeg)
+    logger.info('Flux-weighted mask for sources activated')
+    TS = SOURCES.field('ts') 
+    indTS25 = TS > 25.
+    GLON = SOURCES.field('GLON')[indTS25]
+    GLAT = SOURCES.field('GLAT')[indTS25]
+    logger.info('Num Src: %i'%len(TS))
+    logger.info('Num Src TS>25: %i'%len(TS[indTS25]))
+    for i, src in enumerate(SOURCES[indTS25]):
+        x, y, z = hp.rotator.dir2vec(GLON[i],GLAT[i],lonlat=True)
+        b_pix= hp.pixelfunc.vec2pix(NSIDE, x, y, z)
+        BAD_PIX_SRC.append(b_pix)
+        radintpix = hp.query_disc(NSIDE, (x, y, z), RADrad[i]*norm)
+        BAD_PIX_SRC.extend(radintpix)
+    return BAD_PIX_SRC
+    
+
+def mask_src_weighted(cat_src_file, cat_extsrc_file, ENERGY, NSIDE):
+    """Returns the 'bad pixels' defined by the position of a source and a 
+       certain radius away from that point. The radii increase with the 
+       brightness and rescaled by a factor between 1 and 0.3 shaped as the PSF.
+
+       cat_src_file: str
+          .fits file with the source catalog
+       cat_extsrc_file: str
+          .fits file with the extended sources catalog
+       ENERGY: float
+          Mean energy of the map to be masked
+       NSIDE: int
+          healpix nside parameter
+    """
+    psf_ref_file = os.path.join(GRATOOLS_CONFIG, 'ascii/PSF_UCV_PSF1.txt')
+    src_cat = pf.open(cat_src_file)
+    extsrc_cat = pf.open(cat_extsrc_file)
+    NPIX = hp.pixelfunc.nside2npix(NSIDE)
     CAT = src_cat['LAT_Point_Source_Catalog']
-    CAT_EXTENDED = src_cat['ExtendedSources']
+    #CAT = src_cat['LAT_POINT_SOURCE_CATALOG'] 
+    CAT_EXTENDED = extsrc_cat['ExtendedSources']
     BAD_PIX_SRC = []
     SOURCES = CAT.data
     EXT_SOURCES = CAT_EXTENDED.data
@@ -230,9 +283,11 @@ def mask_src_weighted(cat_file, ENERGY, NSIDE):
     logger.info('Normalization of radii due to energy: %.3f'%norm)
     logger.info('Psf(%.2f)= %.2f'%(ENERGY, psf_en))
     #FLUX = SOURCES.field('Flux1000')
-    FLUX = np.log10(np.sort(SOURCES.field('Flux1000')))
+    #FLUX = np.log10(np.sort(SOURCES.field('Flux1000')))
+    FLUX = np.log10(SOURCES.field('Flux1000'))
+    #FLUX = np.log10(SOURCES.field('Flux_Density'))
     flux_min, flux_max = min(FLUX), max(FLUX)
-    rad_min, rad_max = 0.5, 5.
+    rad_min, rad_max = 1, 5.
     RADdeg = rad_min + FLUX*((rad_max - rad_min)/(flux_max - flux_min)) -\
         flux_min*((rad_max - rad_min)/(flux_max - flux_min))
     RADrad = np.radians(RADdeg)
