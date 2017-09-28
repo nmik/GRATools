@@ -86,7 +86,7 @@ def remove_monopole(map_file_name, mask_file=None):
 
 def remove_monopole_dipole(map_file_name, mask_file=None):
     """Returns a map obtained from the one given and cleaned for monopole and
-       dipole.
+       dipole and the value of the calculated monopole term.
        
        map_file_name : str
           path and name of the map you want to clean for monopole 
