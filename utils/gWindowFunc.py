@@ -313,15 +313,18 @@ def main():
     
     mask_f = os.path.join(GRATOOLS_CONFIG, 'fits/Mask_src1p5_gp30.fits')
     out_wbeam_txt = 'output/Wbeam_P8R2_ULTRACLEANVETO_V6_56.txt'
+    out_wbeam_txt = 'output/Wbeam_P8R2_SOURCE_V6_32.txt'
     wb_2d = get_wbeam(out_wbeam_txt, show=True)
+
+    
     logger.info('Wait...computing integral Wbeam at some energy intervals!')
     gamma = 2.3
     _emin = np.array([158.49,301.00,524.81])#,1000.00,1737.80, 2754.23,
                       #4786.30, 8317.64])a
     _emax =  np.array([301.00,524.81,1000.00])#, 1737.80, 2754.23, 4786.30, 
                        #8317.64, 14454.40])
-    _emin = np.array([1000.00,1737.80, 2754.23, 4786.30, 8317.64,14454.40,22908.68,
-                      39810.71,69183.09, 109647.81,301995.16])
+    _emin = np.array([1000.00,1737.80, 2754.23, 4786.30, 8317.64,14454.40,
+                      22908.68,39810.71,69183.09, 109647.81,301995.16])
     _emax =  np.array([1737.80, 2754.23, 4786.30, 8317.64,14454.40,22908.68,
                        39810.71,69183.09,120226.44,301995.16,1000000.0])
     spec = get_powerlaw_spline(gamma)
