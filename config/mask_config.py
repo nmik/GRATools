@@ -11,13 +11,14 @@
 #------------------------------------------------------------------------------#
 
 import os
-from GRATools import FT_DATA_FOLDER
+from GRATools import GRATOOLS_CONFIG
 
-OUT_LABEL = 'Mask_src2_gp30' 
+OUT_LABEL = 'Mask_4FGL1_gp30' 
 
 NSIDE = 512
-SRC_CATALOG = os.path.join(FT_DATA_FOLDER,'catalogs/gll_psc_v16.fit')
-SRC_MASK_RAD = 2 #[deg]
+SRC_CATALOG = os.path.join(GRATOOLS_CONFIG,'catalogs/preliminary4FGL.fits')
+EXTSRC_CATALOG = os.path.join(GRATOOLS_CONFIG,'catalogs/gll_psc_v16.fit')
+SRC_MASK_RAD = 1 #[deg]
 GP_MASK_LAT = 30.
 ENERGY =  600. #If --srcweighted False it is not used
 
