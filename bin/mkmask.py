@@ -45,6 +45,10 @@ PARSER.add_argument('--srcmaskweight', type=ast.literal_eval,
                     choices=[True, False],
                     default=False,
                     help='Flux-weighted sources mask activated')
+PARSER.add_argument('--srcmaskweight_custom', type=ast.literal_eval, 
+                    choices=[True, False],
+                    default=False,
+                    help='Flux-weighted sources mask activated (Custom cat)')
 PARSER.add_argument('--reversesrcmask', type=ast.literal_eval,
                     choices=[True, False],
                     default=False,
@@ -110,15 +114,31 @@ def mkMask(**kwargs):
     if kwargs['srcmaskweight'] == True:
         from GRATools.utils.gMasks import mask_src_weighted
         src_mask_rad = data.SRC_MASK_RAD
+        src_cat_file = data.SRC_CATALOG
+        extsrc_cat_file =data.EXTSRC_CATALOG
+        if kwargs['reversesrcmask'] == True:
+            logger.info('Reversing source mask activated...')
+            allpix = np.arange(npix)
+            srcmask = np.array(mask_src_weighted(src_cat_file, extsrc_cat_file, 
+                                                 energy, nside))
+            mask = np.in1d(allpix, srcmask)
+            bad_pix += list(np.where(~mask)[0])
+        else:
+            bad_pix += mask_src_weighted(src_cat_file, extsrc_cat_file,
+                                         energy, nside)
+    if kwargs['srcmaskweight_custom'] == True:
+        from GRATools.utils.gMasks import mask_src_weighted_custom
+        src_mask_rad = data.SRC_MASK_RAD
         cat_file = data.SRC_CATALOG
         if kwargs['reversesrcmask'] == True:
             logger.info('Reversing source mask activated...')
             allpix = np.arange(npix)
-            srcmask = np.array(mask_src_weighted(cat_file, energy, nside))
+            srcmask = np.array(mask_src_weighted_custom(cat_file, 
+                                                        energy, nside))
             mask = np.in1d(allpix, srcmask)
             bad_pix += list(np.where(~mask)[0])
         else:
-            bad_pix += mask_src_weighted(cat_file, energy, nside)
+            bad_pix += mask_src_weighted_custom(cat_file, energy, nside)
     if kwargs['gpmask'] == True:
         from GRATools.utils.gMasks import mask_gp
         gp_mask_lat = data.GP_MASK_LAT
