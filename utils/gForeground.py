@@ -63,7 +63,7 @@ def flux2counts(flux_map, exposure_map):
     counts_map = flux_map*exposure_map*sr
     return counts_map
 
-def fit_foreground_lstsq(fore_map, data_map):
+def fit_foreground_lstsq(fore_map, data_map, mask_map):
     """Perform the gaussian fit (least square method) given a data map and
        a model map, with this expression: data = A + B*model; returns A and B,
        fit parametres.
@@ -76,14 +76,14 @@ def fit_foreground_lstsq(fore_map, data_map):
     """
     nside_out = 64
     _notnull = np.where(data_map > 1e-30)[0]
-    mask_f = os.path.join(GRATOOLS_CONFIG, 'fits/Mask64_src2_gp15.fits')
-    mask = hp.read_map(mask_f)
-    _unmask = np.where(mask > 1e-30)[0]
-    logger.info('down grade...')
-    fore_repix = np.array(hp.ud_grade(fore_map, nside_out=nside_out))
-    data_repix = np.array(hp.ud_grade(data_map, nside_out=nside_out))
-    A = np.vstack([fore_repix[_unmask], np.ones(len(fore_repix[_unmask]))]).T
-    norm, const = np.linalg.lstsq(A, data_repix[_unmask])[0]
+    #mask_f = os.path.join(GRATOOLS_CONFIG, 'fits/Mask64_src2_gp15.fits')
+    #mask = hp.read_map(mask_f)
+    _unmask = np.where(mask_map > 1e-30)[0]
+    #logger.info('down grade...')
+    #fore_repix = np.array(hp.ud_grade(fore_map, nside_out=nside_out))
+    #data_repix = np.array(hp.ud_grade(data_map, nside_out=nside_out))
+    A = np.vstack([fore_map[_unmask], np.ones(len(fore_map[_unmask]))]).T
+    norm, const = np.linalg.lstsq(A, data_map[_unmask])[0]
     logger.info('fit param (norm, const): %.3f, %e' %(norm, const))
     return norm, const
 
@@ -270,7 +270,6 @@ def fit_foreground_poisson(fore_map, data_map, n_guess=1., c_guess=0.1,
         plt.contourf(z, [zmin, zmin+2.3, zmin+4.61, zmin+5.99], 
                      colors='w', origin='lower', alpha=0.3)
         plt.scatter(igrb_min_ind, norm_min_ind, s=45, c='w', marker='+')
-
         plt.show()
     return norm_min, igrb_min, _norm[0], _norm[-1], np.amin(_igrb), \
         np.amax(_igrb)
