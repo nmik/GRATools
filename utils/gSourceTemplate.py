@@ -4,7 +4,7 @@
 # On behalf of the Fermi-LAT Collaboration.                                    #
 #                                                                              #
 # This program is free software; you can redistribute it and/or modify         #
-# it under the terms of the GNU GengReral Public License as published by       #
+# it under the terms of the GNU General Public License as published by         #
 # the Free Software Foundation; either version 3 of the License, or            #
 # (at your option) any later version.                                          #
 #                                                                              #
@@ -157,20 +157,20 @@ def main():
                                 'psf_P8R2_ULTRACLEANVETO_V6_32.fits')
         isofile = os.path.join(GRATOOLS_CONFIG, 'models', 
                            'iso_P8R2_ULTRACLEANVETO_V6_v06.txt')
-        e_min, e_max= 1000, 1737
+        e_min, e_max= 120226, 331131 #158, 350#1000, 1737
         src_templ_map = build_src_template(cat_file, psf_file, emin=e_min, 
                                            emax=e_max, b_cut=abslatitude)
         from GRATools.utils.gForeground import get_iso_integral_flux_map
         iso_map = get_iso_integral_flux_map(isofile, e_min, e_max)
         iso_src_map = iso_map + src_templ_map
         mask_f =  os.path.join(GRATOOLS_CONFIG, 
-                              'fits/Mask_src1rev_gp30.fits')
+                              'fits/Mask_final_8317.fits')
         mask = hp.read_map(mask_f)
         iso_src_map_masked = hp.ma(iso_src_map)
         iso_src_map_masked.mask = np.logical_not(mask)
-        titolo = 'Energy: %f - %f MeV'%(e_min, e_max)
+        titolo = 'Energy: %.1f - %.1f MeV'%(e_min, e_max)
         hp.mollview(iso_src_map_masked.filled(), title=titolo, 
-                    coord='G',norm='log')#, min=1.5e-7, max=4e-7)
+                    coord='G')#,norm='log'), min=1.5e-7, max=4e-7)
         hp.graticule()
         plt.show()
         
