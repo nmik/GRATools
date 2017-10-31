@@ -79,23 +79,56 @@ def ref_igrb_band():
     label='Pass7 IGRB (Ackermann et al. 2015)'
     return igrb, lab
 
-def ref_cp_band():
+def ref_cp_band(which_spec = 0):
     """Draw the statistics band of the previous Cp measure
+           which_spec = int 
+                possible values: 0, 1, 2 (default: 0)
+                0 = PASS7_Cp.txt
+                1 = PASS8-PSF3_Cp.txt
+                2 = PASS7-FRONT_Cp.txt
     """
     refcp = open(os.path.join(GRATOOLS_CONFIG,'ascii/PASS7_Cp.txt'), 'r')
-    rows = (row.strip().split() for row in refcp)
-    (lx, hx, y, yerr) = zip(*rows)
-    lx = np.asarray(lx[1:], dtype='float')
-    hx = np.asarray(hx[1:], dtype='float')
-    y = np.asarray(y[1:], dtype='float')
-    yerr = np.asarray(yerr[1:], dtype='float')
-    fig, ax = plt.subplots(1)
-    refcp_plot = make_error_boxes(ax, lx, hx, y*np.sqrt(lx*hx)**4/(hx-lx)**2, 
+    refcp1 = open(os.path.join(GRATOOLS_CONFIG,'ascii/PASS8-PSF3_Cp.txt'), 'r')
+    refcp2 = open(os.path.join(GRATOOLS_CONFIG,'ascii/PASS8-FRONT_Cp.txt'), 'r')
+    if which_spec == 0:
+        rows = (row.strip().split() for row in refcp)
+        (lx, hx, y, yerr) = zip(*rows)
+        lx = np.asarray(lx[1:], dtype='float')
+        hx = np.asarray(hx[1:], dtype='float')
+        y = np.asarray(y[1:], dtype='float')
+        yerr = np.asarray(yerr[1:], dtype='float')
+        fig, ax = plt.subplots(1)
+        refcp_plot = make_error_boxes(ax, lx, hx, y*np.sqrt(lx*hx)**4/(hx-lx)**2, 
                                   yerr*np.sqrt(lx*hx)**4/(hx-lx)**2)
-    label= 'M. Fornasa et al. 2016'
-    legend = plt.Rectangle((0, 0), 1, 1, fc='k', alpha=0.3)
-    return legend, label
-
+        label= 'M. Fornasa et al. 2016'
+        legend = plt.Rectangle((0, 0), 1, 1, fc='k', alpha=0.3)
+        return legend, label
+    elif  which_spec == 1:
+        rows = (row.strip().split() for row in refcp1)
+        (lx, hx, y, yerr) = zip(*rows)
+        lx = np.asarray(lx[1:], dtype='float')
+        hx = np.asarray(hx[1:], dtype='float')
+        y = np.asarray(y[1:], dtype='float')
+        yerr = np.asarray(yerr[1:], dtype='float')
+        fig, ax = plt.subplots(1)
+        refcp_plot = make_error_boxes(ax, lx, hx, y*np.sqrt(lx*hx)**4/(hx-lx)**2, 
+                                  yerr*np.sqrt(lx*hx)**4/(hx-lx)**2)
+        label= 'M. Fornasa et al. 2016 (Pass 8 UC-PSF3)'
+        legend = plt.Rectangle((0, 0), 1, 1, fc='k', alpha=0.3)
+        return legend, label
+    else:
+        rows = (row.strip().split() for row in refcp2)
+        (lx, hx, y, yerr) = zip(*rows)
+        lx = np.asarray(lx[1:], dtype='float')
+        hx = np.asarray(hx[1:], dtype='float')
+        y = np.asarray(y[1:], dtype='float')
+        yerr = np.asarray(yerr[1:], dtype='float')
+        fig, ax = plt.subplots(1)
+        refcp_plot = make_error_boxes(ax, lx, hx, y*np.sqrt(lx*hx)**4/(hx-lx)**2, 
+                                  yerr*np.sqrt(lx*hx)**4/(hx-lx)**2)
+        label= 'M. Fornasa et al. 2016 (Pass 8 UC-FRONT)'
+        legend = plt.Rectangle((0, 0), 1, 1, fc='k', alpha=0.3)
+        return legend, label
 
 def main():
     """Test module
