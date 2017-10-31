@@ -15,7 +15,6 @@
 """
 
 
-
 import os
 import re
 import numpy as np
@@ -88,6 +87,52 @@ def fit_foreground_lstsq(fore_map, data_map, mask_map):
     return norm, const
 
 @jit
+def poisson_likelihood_2(norm1_guess, norm2_guess, const_guess, fore_map, 
+                         data_map, srctempl_map, exp=None, sr=None):
+    """Compute the log-likelihood as decribed here: 
+       http://iopscience.iop.org/article/10.1088/0004-637X/750/1/3/pdf
+       where the model to fit to data is given by norm*fore_map+const.
+
+       norm1_guess : float
+          initial guess for normalization parameter
+       norm2_guess : float
+          initial guess for normalization parameter
+       const_guess : float
+          initial guess for constant parameter
+       fore_map : numpy array
+          helapix map of foreground model
+       data_map : numpy array
+          helapix map of data. It could be either a count map or a flux map.
+          If a counts map is given, an exposure map should be given too. See 
+          next parameter.
+       srctempl_map : numpy array
+          helapix map of source template
+       exp :  numpy array or None
+          helapix map of the exposure. Should be given if the data map is in 
+          counts (beacause foreground map is in flux units by default and it 
+          needs to be turned to counts to be fitted). While, If data map is 
+          in flux units, do not declare this parameter, which is None by 
+          default.
+       sr : float or None
+          pixel area -> 4*pi/Npix
+    """
+    a = norm1_guess
+    b = const_guess
+    c = norm2_guess
+    s = srctempl_map
+    factorial_data = fact(data_map)
+    lh = 0
+    if exp is not None:
+        for i, f in enumerate(fore_map):
+            lh += (a*f+c*s[i]+b)*exp[i]*sr + np.log(factorial_data[i]) - \
+                data_map[i]*np.log((a*f+c*s[i]+b)*exp[i]*sr)
+    else:
+        for i, f in enumerate(fore_map):
+            lh += np.sum(((a*f+c*s[i]+b)+np.log(factorial_data[i]) -\
+                              data_map[i]*np.log((a*f+c*s[i]+b))))
+    return lh
+
+@jit
 def poisson_likelihood(norm_guess, const_guess, fore_map, data_map, exp=None, 
                        sr=None):
     """Compute the log-likelihood as decribed here: 
@@ -126,6 +171,115 @@ def poisson_likelihood(norm_guess, const_guess, fore_map, data_map, exp=None,
             lh += np.sum(((a*f+b)+np.log(factorial_data[i]) -\
                               data_map[i]*np.log((a*f+b))))
     return lh
+
+def fit_fore_src_poisson(fore_map, data_map, srctempl_map, n1_guess=1., 
+                         c_guess=0.1, n2_guess=1., exp=None, smooth=False, 
+                         show=False):
+    """Performs the poisonian fit, recursively computing the log likelihood 
+       (using poisson_likelihood) for a grid of values of fit parameters around
+       the guess. Returns the values of parameters which minimize the log 
+       likelihood, togather to the 1-sigma error
+
+       n1_guess : float
+          initial guess for normalization parameter
+       n1_guess : float
+          initial guess for normalization parameter
+       c_guess : float
+          initial guess for constant parameter
+       fore_map : numpy array
+          helapix map of foreground model
+       data_map : numpy array
+          helapix map of data. It could be either a count map or a flux map.
+          If a counts map is given, an exposure map should be given too. See 
+          next parameter.
+          exp :  numpy array or None
+          helapix map of the exposure. Should be given if the data map is in 
+          counts (beacause foreground map is in flux units by default and it 
+          needs to be turned to counts to be fitted). While, If data map is 
+          in flux units, do not declare this parameter, which is None by 
+          default.
+       smooth : bool
+          not implemented yet...
+       show : bool
+          if true it shows some usefull plot to check if the fit is functioning
+    """
+    #show=True
+    logger.info('Performing poissonian fit...')
+    norm1_guess = n1_guess
+    norm2_guess = n2_guess
+    igrb_guess = c_guess
+    nside_out = 64
+    mask_f = os.path.join(GRATOOLS_CONFIG, 'fits/Mask64_src2_gp30.fits')
+    mask = hp.read_map(mask_f)
+    _unmask = np.where(mask > 1e-30)[0]
+    logger.info('down grade...')
+    fore_repix = np.array(hp.ud_grade(fore_map, nside_out=nside_out))
+    data_repix =  np.array(hp.ud_grade(data_map, nside_out=nside_out, 
+                                       power=-2))
+    srct_repix = np.array(hp.ud_grade(srctempl_map, nside_out=nside_out))
+    norm1_list = np.linspace(norm1_guess*0.3, norm1_guess*1.5, 21)
+    norm2_list = np.linspace(norm2_guess*0.3, norm2_guess*1.5, 21)
+    igrb_list = np.linspace(igrb_guess*0.01, igrb_guess*10., 101)
+    logger.info('Minimization likelihood run1...')
+    lh_list = []
+    combinations = list(product(norm1_list, norm2_list, igrb_list))
+    if exp is not None:
+        exposure = exp
+        exposure = np.array(hp.ud_grade(exposure, nside_out=nside_out))
+        areapix = 4*np.pi/(len(data_repix))
+        for i,j,k in combinations: 
+            lh = poisson_likelihood_2(i, j, k, fore_repix[_unmask], 
+                                    data_repix[_unmask], 
+                                    srct_repix[_unmask],
+                                    exp=exposure[_unmask],
+                                    sr=areapix)
+            lh_list.append(lh)
+    else:
+        for i,j,k in combinations:
+            lh = poisson_likelihood_2(i, j, k, fore_repix[_unmask],
+                                    data_repix[_unmask], srct_repix[_unmasked])
+            lh_list.append(lh)
+    lh_min = np.argmin(np.array(lh_list))
+    (norm1_min, norm2_min, igrb_min) = combinations[lh_min]
+    logger.info('Run1 results: n1=%.3f n2=%.3f c=%e'%(norm1_min, norm2_min, 
+                                                      igrb_min))
+    norm1_list = np.linspace(norm1_min*0.7, norm1_min*1.2, 21)
+    norm2_list = np.linspace(norm2_min*0.7, norm2_min*1.2, 21)   
+    igrb_list = np.linspace(igrb_min*0.5, igrb_min*1.5, 101)
+    logger.info('Minimization likelihood run2...')
+    lh_list = []
+    combinations = np.array(list(product(norm1_list, norm2_list, igrb_list)))
+    if exp is not None:
+        exposure = exp
+        exposure = np.array(hp.ud_grade(exposure, nside_out=nside_out))
+        areapix = 4*np.pi/(len(data_repix))
+        for i,j,k in product(norm1_list, norm2_list, igrb_list):
+            lh = poisson_likelihood_2(i, j, k, fore_repix[_unmask],
+                                    data_repix[_unmask],
+                                    srct_repix[_unmask],
+                                    exp=exposure[_unmask],
+                                    sr=areapix)
+            lh_list.append(lh)
+    else:
+        for i,j,k in product(norm1_list, norm2_list, igrb_list):
+            lh = poisson_likelihood_2(i, j, k, fore_repix[_unmask],
+                                    data_repix[_unmask],srct_repix[_unmask])
+            lh_list.append(lh)
+    lh_list = np.array(lh_list)
+    lh_min = np.argmin(lh_list)
+    (norm1_min, norm2_min, igrb_min) = combinations[lh_min]
+    lh_delta = np.array(lh_list)[lh_min]+2.3
+    index = np.where(np.array(lh_list) < lh_delta)[0]
+    _norm1 = np.array([x[0] for x in combinations[index]])
+    logger.info('Norm1 err: %.4f - %.4f'%(_norm1[0], _norm1[-1]))
+    n1_err = (_norm1[0], _norm1[-1])
+    _norm2 = np.array([x[0] for x in combinations[index]])
+    logger.info('Norm2 err: %.4f - %.4f'%(_norm2[0], _norm2[-1]))
+    n2_err = (_norm2[0], _norm2[-1])
+    _igrb = np.array([x[1] for x in combinations[index]])
+    logger.info('Igrb err: %.e - %.e'%(np.amin(_igrb), np.amax(_igrb)))
+    igrb_err = (np.amin(_igrb), np.amax(_igrb))
+    return norm1_min, norm2_min, igrb_min, n1_err, n2_err, igrb_err
 
 def fit_foreground_poisson(fore_map, data_map, n_guess=1., c_guess=0.1,
                            exp=None, smooth=False, show=False):
