@@ -179,11 +179,15 @@ def get_wbeam(wb_file, show=False):
         en_tick = ['1$\cdot$10$^{2}$', '5.8$\cdot$10$^{2}$', 
                    '3.4$\cdot$10$^{3}$','1.9$\cdot$10$^{4}$', 
                    '1.1$\cdot$10$^{5}$']
-        ax.set_yticklabels(['']+en_tick)
-        plt.title('$W_{beam}(l, E)$')
-        plt.xlabel('$l$')
-        plt.ylabel('$Energy$')
-        plt.colorbar(cax)
+        l_tick = ['0','200','400','600','800','1000','1200','1400']
+        ax.set_yticklabels(['']+en_tick, size=13)
+        ax.set_xticklabels(['']+l_tick, size=13)
+        ax.xaxis.set_ticks_position('bottom')
+        plt.title('PSF 1+2+3', size=18)
+        plt.xlabel('$l$', size=15)
+        plt.ylabel('$Energy$', size=15)
+        cbar = plt.colorbar(cax)
+        cbar.set_label('$W_{beam}(l, E)$', size=15)
         plt.grid()
         plt.show()
     
@@ -313,7 +317,9 @@ def main():
     
     mask_f = os.path.join(GRATOOLS_CONFIG, 'fits/Mask_src1p5_gp30.fits')
     out_wbeam_txt = 'output/Wbeam_P8R2_ULTRACLEANVETO_V6_56.txt'
-    out_wbeam_txt = 'output/Wbeam_P8R2_SOURCE_V6_32.txt'
+    #out_wbeam_txt = 'output/Wbeam_P8R2_ULTRACLEANVETO_V6_32.txt'
+    #out_wbeam_txt = 'output/Wbeam_P8R2_SOURCE_V6_32.txt'
+    #out_wbeam_txt = 'output/Wbeam_P8R2_SOURCE_V6_60.txt'
     wb_2d = get_wbeam(out_wbeam_txt, show=True)
 
     
@@ -329,15 +335,19 @@ def main():
                        39810.71,69183.09,120226.44,301995.16,1000000.0])
     spec = get_powerlaw_spline(gamma)
     c = ['0.', '0.1','0.2','0.3','0.4','0.5','0.6','0.7','0.8','0.9','0.95']
-    plt.figure(facecolor='white')
+    #c = ['0.2', '0.5', '0.8']
+    fig = plt.figure(facecolor='white')
+    plot = fig.add_subplot(111)
     for i, (emin, emax) in enumerate(zip(_emin, _emax)):
         wb = get_integral_wbeam(out_wbeam_txt, spec, e_min=emin, e_max=emax)
         wb.plot(show=False, label='%.2f-%.2f GeV'%(emin/1000, emax/1000), 
                 color='%s'%c[i])
-        plt.ylabel('W$_{beam}$')
-        plt.title('ULTRACLEANVETO PSF 1+2+3')
+        plt.ylabel('W$_{beam}$', size=15)
+        plt.xlabel('$l$', size=15)
+        plt.title('ULTRACLEANVETO PSF 1+2+3', size=16)
         plt.ylim(0,1)
-        plt.legend(loc=3, fontsize=10)
+    plt.legend(loc=3, fontsize=10)
+    plot.tick_params(axis='both', which='major', labelsize=14)
     plt.show()
    
 
