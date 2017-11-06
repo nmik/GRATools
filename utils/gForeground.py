@@ -75,12 +75,7 @@ def fit_foreground_lstsq(fore_map, data_map, mask_map):
     """
     nside_out = 64
     _notnull = np.where(data_map > 1e-30)[0]
-    #mask_f = os.path.join(GRATOOLS_CONFIG, 'fits/Mask64_src2_gp15.fits')
-    #mask = hp.read_map(mask_f)
     _unmask = np.where(mask_map > 1e-30)[0]
-    #logger.info('down grade...')
-    #fore_repix = np.array(hp.ud_grade(fore_map, nside_out=nside_out))
-    #data_repix = np.array(hp.ud_grade(data_map, nside_out=nside_out))
     A = np.vstack([fore_map[_unmask], np.ones(len(fore_map[_unmask]))]).T
     norm, const = np.linalg.lstsq(A, data_map[_unmask])[0]
     logger.info('fit param (norm, const): %.3f, %e' %(norm, const))
@@ -281,8 +276,8 @@ def fit_fore_src_poisson(fore_map, data_map, srctempl_map, n1_guess=1.,
     igrb_err = (np.amin(_igrb), np.amax(_igrb))
     return norm1_min, norm2_min, igrb_min, n1_err, n2_err, igrb_err
 
-def fit_foreground_poisson(fore_map, data_map, n_guess=1., c_guess=0.1,
-                           exp=None, smooth=False, show=False):
+def fit_foreground_poisson(fore_map, data_map, mask_map=None, n_guess=1., 
+                           c_guess=0.1,exp=None, smooth=False, show=False):
     """Performs the poisonian fit, recursively computing the log likelihood 
        (using poisson_likelihood) for a grid of values of fit parameters around
        the guess. Returns the values of parameters which minimize the log 
@@ -314,13 +309,21 @@ def fit_foreground_poisson(fore_map, data_map, n_guess=1., c_guess=0.1,
     norm_guess = n_guess
     igrb_guess = c_guess
     nside_out = 64
-    mask_f = os.path.join(GRATOOLS_CONFIG, 'fits/Mask64_src2_gp30.fits')
-    mask = hp.read_map(mask_f)
-    _unmask = np.where(mask > 1e-30)[0]
+    mask = 0.
+    if mask_map is None:
+        logger.info('fit outside default mask: 30deg gp, 2 deg srcs.')
+        mask_f = os.path.join(GRATOOLS_CONFIG, 'fits/Mask64_src2_gp30.fits')
+        mask = hp.read_map(mask_f)
+    else:
+        logger.info('fit outside mask given in config file.')
+        mask = mask_map   
     logger.info('down grade...')
     fore_repix = np.array(hp.ud_grade(fore_map, nside_out=nside_out))
-    data_repix =  np.array(hp.ud_grade(data_map, nside_out=nside_out, 
+    data_repix = np.array(hp.ud_grade(data_map, nside_out=nside_out, 
                                        power=-2))
+    mask_repix =  np.array(hp.ud_grade(mask, nside_out=nside_out, 
+                                       power=-2))
+    _unmask = np.where(mask_repix > 1e-30)[0]
     norm_list = np.linspace(norm_guess*0.3, norm_guess*1.5, 50)
     igrb_list = np.linspace(igrb_guess*0.01, igrb_guess*10., 200)
     logger.info('Minimization likelihood run1...')
@@ -367,6 +370,7 @@ def fit_foreground_poisson(fore_map, data_map, n_guess=1., c_guess=0.1,
     lh_list = np.array(lh_list)
     lh_min = np.argmin(lh_list)
     (norm_min, igrb_min) = combinations[lh_min]
+    logger.info('Run2 results: n=%.3f c=%e'%(norm_min, igrb_min))
     lh_delta = np.array(lh_list)[lh_min]+2.3
     index = np.where(np.array(lh_list) < lh_delta)[0]
     _norm = np.array([x[0] for x in combinations[index]])
