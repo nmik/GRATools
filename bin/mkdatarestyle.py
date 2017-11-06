@@ -244,7 +244,8 @@ def mkRestyle(**kwargs):
                 all_c_guess.append(get_ref_igrb_spline()(emean[ii])*100)
             n0, c0, n0_sx, n0_dx, c0_sx, c0_dx = \
                 fit_foreground_poisson(all_fore[0], 
-                                       all_counts[0], 
+                                       all_counts[0],
+                                       mask,
                                        exp=all_exps[0],
                                        n_guess=1., 
                                        c_guess=all_c_guess[0])
@@ -261,6 +262,7 @@ def mkRestyle(**kwargs):
                 n, c, n_sx, n_dx, c_sx, c_dx = \
                     fit_foreground_poisson(all_fore[b], 
                                            all_counts[b], 
+                                           mask,
                                            exp=all_exps[b],
                                            n_guess=1., 
                                            c_guess=all_c_guess[b])
@@ -349,7 +351,7 @@ def mkRestyle(**kwargs):
     new_txt.close()
     logger.info('Created %s' %os.path.join(GRATOOLS_OUT, 
                                      '%s_%s_%s_parameters.txt'\
-                                      %(out_label, mask_label, binning_label)))   
+                                      %(out_label, mask_label, binning_label)))
     logger.info('done!')
 
 
