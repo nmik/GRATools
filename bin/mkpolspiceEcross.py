@@ -97,7 +97,7 @@ def mkCross(**kwargs):
             logger.info('taking Mask %i'%index_comb[i][0])
             mask_f = mask1_f
         out_label = '%i-%i_%i-%i'%(emin1, emax1, emin2, emax2)
-        cl_txt.write('ENERGY\t %.2f %.2f - %.2f %.2f\n'
+        cl_txt.write('ENERGY\t %.2f %.2f %.2f %.2f\n'
                      %(emin1, emax1, emin2, emax2))
         wb_en1 = get_integral_wbeam(wbeam_comb[i][0], energy_spec, emin1, emax1)
         wb_en2= get_integral_wbeam(wbeam_comb[i][1], energy_spec, emin2, emax2)
@@ -116,11 +116,14 @@ def mkCross(**kwargs):
         pol_dict = data.POLCEPICE_DICT
         for key in pol_dict:
             if key == 'clfile':
-                pol_dict[key] = os.path.join(out_folder,'%s_Ecrosscl.txt'%out_label)
+                pol_dict[key] = os.path.join(out_folder,'%s_Ecrosscl.txt'
+                                             %out_label)
             if key == 'cl_outmap_file':
-                pol_dict[key] = os.path.join(out_folder,'%s_Ecrossclraw.txt'%out_label)
+                pol_dict[key] = os.path.join(out_folder,'%s_Ecrossclraw.txt'
+                                             %out_label)
             if key == 'covfileout':
-                 pol_dict[key] = os.path.join(out_folder,'%s_Ecrosscov.fits'%out_label)
+                 pol_dict[key] = os.path.join(out_folder,'%s_Ecrosscov.fits'
+                                              %out_label)
             if key == 'mapfile':
                 pol_dict[key] = map1
             if key == 'mapfile2':
@@ -130,8 +133,10 @@ def mkCross(**kwargs):
             if key == 'maskfile2':
                 pol_dict[key] = mask_f
         config_file_name = 'pol_Ecross_%s'%(out_label)
-        if os.path.exists(os.path.join(out_folder,'%s_Ecrosscl.txt'%out_label)) and \
-                os.path.exists(os.path.join(out_folder,'%s_Ecrosscov.fits'%out_label)):
+        if os.path.exists(os.path.join(out_folder,'%s_Ecrosscl.txt'
+                                       %out_label)) and \
+                os.path.exists(os.path.join(out_folder,'%s_Ecrosscov.fits'
+                                            %out_label)):
             logger.info('ATT: Retriving power spectrum...')
             _ll, _cl, _clerr = pol_cl_parse(os.path.join(out_folder,
                                             '%s_Ecrosscl.txt'%out_label),
