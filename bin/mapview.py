@@ -24,8 +24,9 @@ from GRATools.utils.matplotlib_ import pyplot as plt
 from GRATools.utils.matplotlib_ import overlay_tag, save_current_figure
 from matplotlib import cm
 cool_cmap = cm.Greys_r
+#cool_cmap = cm.winter_r
+cool_cmap = cm.inferno
 cool_cmap.set_under("w")
-
 __description__ = 'Viewer interface (.fits viewer)'
 
 
@@ -37,11 +38,11 @@ PARSER.add_argument('--field', type=int, default=0,
 PARSER.add_argument('--infile', type=str, required=True,
                     help='input fits file')
 PARSER.add_argument('--udgrade', type=int, default=512,
-                    help='')
-PARSER.add_argument('--optimized', type=ast.literal_eval, choices=[True, False],
-                    default=False,
-                    help='set min and max of the map in mollview')
-PARSER.add_argument('--smoothing', type=float,default=None,
+                    help='apply a up or under grade of the nside')
+PARSER.add_argument('--zscale', type=str, choices=['lin', 'log','hist',
+                                                   'optimized'],
+                    default='lin', help='specify the scale of the z axis')
+PARSER.add_argument('--smoothing', type=float, default=None,
                     help='Gaussian beam fwhm for the smoothing (in deg)')
 PARSER.add_argument('--counts', type=ast.literal_eval, choices=[True, False],
                     default=False,
@@ -77,36 +78,48 @@ def maps_view(**kwargs):
                 healpix_maps = hp.pixelfunc.ud_grade(healpix_maps, nside_out, 
                                                      pess=True)
                 healpix_maps[np.where(healpix_maps==0)[0]] = hp.UNSEEN
-        if kwargs['optimized'] == True:
+        if kwargs['zscale'] == 'optimized':
             logger.info('Optimizing...')
             hp.mollview(healpix_maps, title=t.replace('.fits',''), \
                             coord='G', min=-5e-7, max=1e-7, cmap=cool_cmap)
-            hp.graticule()
-            #overlay_tag(color='silver', x=0.45)
+            plt.show()  
+        elif kwargs['zscale'] == 'log':
+            logger.info('Optimizinglog z scale...')
+            hp.mollview(healpix_maps, title=t.replace('.fits',''), \
+                            coord='G', norm='log', cmap=cool_cmap)
+            plt.show()  
+        elif kwargs['zscale'] == 'hist':
+            logger.info('Optimizinglog z scale...')
+            hp.mollview(healpix_maps, title=t.replace('.fits',''), \
+                            coord='G', norm='hist', cmap=cool_cmap)
             plt.show()
         else:
             hp.mollview(healpix_maps, title=t.replace('.fits',''), \
                             coord='G', cmap=cool_cmap)
-            hp.graticule()
-            #overlay_tag(color='silver', x=0.45)
             plt.show()
     else:
         for i, maps in enumerate(healpix_maps):
             healpix_maps = hp.pixelfunc.ud_grade(healpix_maps, nside_out, \
                                                      pess=True)
-            if kwargs['optimized'] == True:
-                logger.info('Optimizing...')
-                hp.mollview(maps, title=t.replace('.fits','_%i'%i), \
-                                coord='G', min=-1e-7, max=1e-4, cmap=cool_cmap)
-                hp.graticule()
-                overlay_tag(color='silver', x=0.45)
-                plt.show()
-            else:
-                hp.mollview(healpix_maps, title=t.replace('.fits',''), \
-                                coord='G', cmap=cool_cmap)
-                hp.graticule()
-                overlay_tag(color='silver', x=0.05)
-                plt.show()
+        if kwargs['zscale'] == 'optimized':
+            logger.info('Optimizing...')
+            hp.mollview(healpix_maps, title=t.replace('.fits',''), \
+                            coord='G', min=-5e-7, max=1e-7, cmap=cool_cmap)
+            plt.show()  
+        elif kwargs['zscale'] == 'log':
+            logger.info('Optimizinglog z scale...')
+            hp.mollview(healpix_maps, title=t.replace('.fits',''), \
+                            coord='G', norm='log', cmap=cool_cmap)
+            plt.show()  
+        elif kwargs['zscale'] == 'hist':
+            logger.info('Optimizinglog z scale...')
+            hp.mollview(healpix_maps, title=t.replace('.fits',''), \
+                            coord='G', norm='hist', cmap=cool_cmap)
+            plt.show()      
+        else:
+            hp.mollview(healpix_maps, title=t.replace('.fits',''), \
+                            coord='G', cmap=cool_cmap)
+            plt.show()
 
 if __name__ == '__main__':
     args = PARSER.parse_args()
