@@ -83,13 +83,13 @@ def mask_extsrc(cat_file, MASK_S_RAD, NSIDE):
             x, y, z = hp.rotator.dir2vec(GLON,GLAT,lonlat=True)
             b_pix= hp.pixelfunc.vec2pix(NSIDE, x, y, z)
             BAD_PIX_SRC.append(b_pix) 
-            radintpix = hp.query_disc(NSIDE, (x, y, z), np.radians(5))
+            radintpix = hp.query_disc(NSIDE, (x, y, z), np.radians(10))
             BAD_PIX_SRC.extend(radintpix)
         else:
             x, y, z = hp.rotator.dir2vec(GLON,GLAT,lonlat=True)
             b_pix = hp.pixelfunc.vec2pix(NSIDE, x, y, z)
             BAD_PIX_SRC.append(b_pix) 
-            radintpix = hp.query_disc(NSIDE, (x, y, z), np.radians(2.5))
+            radintpix = hp.query_disc(NSIDE, (x, y, z), np.radians(5))
             BAD_PIX_SRC.extend(radintpix)
     return BAD_PIX_SRC
 
@@ -301,6 +301,8 @@ def mask_src_weighted(cat_src_file, cat_extsrc_file, ENERGY, NSIDE):
     psf_ref = get_psf_ref(psf_ref_file)
     if '4FGL' in cat_src_file:
         FLUX = np.log10(SOURCES.field('Flux_Density'))
+    if 'psch' in cat_src_file:
+        FLUX = np.log10(SOURCES.field('Flux'))
     else:
         FLUX = np.log10(SOURCES.field('Flux1000'))
     flux_min, flux_max = min(FLUX), max(FLUX)
@@ -399,14 +401,15 @@ def main():
     """
     nside = 512
     SRC_CATALOG_FILE = os.path.join(GRATOOLS_CONFIG,'catalogs/gll_psc_v16.fit')
-    bad_pix = mask_src_weighted(SRC_CATALOG_FILE, SRC_CATALOG_FILE, 1000, nside)
-    bad_pix += mask_bat_gp(2e-7, nside)
+    bad_pix = mask_src_weighted(SRC_CATALOG_FILE, SRC_CATALOG_FILE,8317, nside)
+    bad_pix += mask_bat_gp(2.5e-7, nside)
     npix = hp.nside2npix(nside)
     mask = np.ones(npix)
     for bpix in np.unique(bad_pix):
         mask[bpix] = 0
     fsky = 1-(len(np.unique(bad_pix))/float(npix))
-    title = 'Energy = 100 GeV, F$_{sky}$ = %.3f'%(fsky)
+    #title = 'Energy = 100 GeV, F$_{sky}$ = %.3f'%(fsky)
+    title = 'F$_{sky}$ = %.3f'%(fsky)   
     hp.mollview(mask, title=title, coord='G', cmap='bone')
     hp.graticule(color='silver')
     plt.show()
