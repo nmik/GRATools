@@ -73,6 +73,10 @@ def build_src_template(cat_file, psf_file, emin, emax, b_cut=20, nside=512):
     psf_th_e = get_psf(psf_file)
     emean = np.sqrt(emin*emax)
     psf_th = psf_th_e.vslice(emean)
+    integral_psf_th = psf_th.integral(psf_th.x[0], psf_th.x[-1])
+    print 'integral', integral_psf_th
+    psf_th = psf_th.scale(1/integral_psf_th)
+    #psf_th.plot()
     ##########################################################
     src_cat = pf.open(cat_file)
     CAT = src_cat['LAT_Point_Source_Catalog']
@@ -88,7 +92,7 @@ def build_src_template(cat_file, psf_file, emin, emax, b_cut=20, nside=512):
     FLUX100_300 = SOURCES.field('Flux100_300')[lat_index]
     FLUX300_1000 = SOURCES.field('Flux300_1000')[lat_index]
     E0 = SOURCES.field('Pivot_Energy')[lat_index]
-    K = SOURCES.field('Flux_Density')[lat_index]
+    K = SOURCES.field('Flux_Density')[lat_index] #cm-2 s-1 sr-1 MeV-1
     alpha = GAMMA = SOURCES.field('Spectral_Index')[lat_index]
     spec_type = SOURCES.field('SpectrumType')[lat_index]
     beta = SOURCES.field('beta')[lat_index]
@@ -97,7 +101,7 @@ def build_src_template(cat_file, psf_file, emin, emax, b_cut=20, nside=512):
     src_name = SOURCES.field('Source_Name')[lat_index]
     src_cat.close()
     ##########################################################
-    INT_FLUXES = []
+    INT_FLUXES = [] #cm-2 s-1 sr-1
     for i, s in enumerate(spec_type):
         spec = 0
         if s == 'PowerLaw':
@@ -115,6 +119,13 @@ def build_src_template(cat_file, psf_file, emin, emax, b_cut=20, nside=512):
     logger.info('Building...')
     src_map = src_builder(psf_th, nside, GLON, GLAT, INT_FLUXES)
     logger.info('Done!')
+    out_srctempl_folder = os.path.join(GRATOOLS_OUT, 'output_src')
+    if not os.path.exists(out_srctempl_folder):
+        os.makedirs(out_srctempl_folder)
+    cat = os.path.basename(cat_file).replace('.fit','')
+    out_name_srctempl = os.path.join(out_srctempl_folder,'src%s_%i-%i.fits'\
+                                             %(cat, emin, emax))
+    hp.write_map(out_name_srctempl, src_map)
     return src_map
 
 @jit
@@ -143,7 +154,8 @@ def src_builder(psf_spline, nside, glon_, glat_, intflux_):
         dist = hp.rotator.angdist(pixdir1, pixdir2)
         psf = psf_spline(dist)
         isomap[radintpix]= isomap[radintpix] + intflux_[i]*psf
-    return isomap
+    srcfluxtempl = isomap
+    return srcfluxtempl
 
 def main():
     """Simple test unit
@@ -151,28 +163,79 @@ def main():
     sourcetemp = True
     
     if sourcetemp == True:
-        abslatitude = 20
+        abslatitude = 0
+        out_srctempl_folder = os.path.join(GRATOOLS_OUT, 'output_src')
         cat_file = os.path.join(GRATOOLS_CONFIG,'catalogs/gll_psc_v16.fit')
-        psf_file = os.path.join(GRATOOLS_OUT, 
+        cat = os.path.basename(cat_file).replace('.fit','')
+        psf32_file = os.path.join(GRATOOLS_OUT, 
                                 'psf_P8R2_ULTRACLEANVETO_V6_32.fits')
-        isofile = os.path.join(GRATOOLS_CONFIG, 'models', 
-                           'iso_P8R2_ULTRACLEANVETO_V6_v06.txt')
-        e_min, e_max= 120226, 331131 #158, 350#1000, 1737
-        src_templ_map = build_src_template(cat_file, psf_file, emin=e_min, 
-                                           emax=e_max, b_cut=abslatitude)
-        from GRATools.utils.gForeground import get_iso_integral_flux_map
-        iso_map = get_iso_integral_flux_map(isofile, e_min, e_max)
-        iso_src_map = iso_map + src_templ_map
-        mask_f =  os.path.join(GRATOOLS_CONFIG, 
-                              'fits/Mask_final_8317.fits')
-        mask = hp.read_map(mask_f)
-        iso_src_map_masked = hp.ma(iso_src_map)
-        iso_src_map_masked.mask = np.logical_not(mask)
-        titolo = 'Energy: %.1f - %.1f MeV'%(e_min, e_max)
-        hp.mollview(iso_src_map_masked.filled(), title=titolo, 
-                    coord='G')#,norm='log'), min=1.5e-7, max=4e-7)
-        hp.graticule()
+        psf56_file = os.path.join(GRATOOLS_OUT, 
+                                'psf_P8R2_ULTRACLEANVETO_V6_56.fits')
+        mask_list = [os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat_420.fits'),
+             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat_420.fits'),
+             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat_524.fits'),
+             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat_1000.fits'),
+             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat_1737.fits'),
+             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat_2754.fits'),
+             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat_4786.fits'),
+             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat_8317.fits'),
+             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat3FHL_8317.fits'),
+             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat3FHL_8317.fits'),
+             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat3FHL_8317.fits'),
+             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat3FHL_8317.fits'),
+             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat3FHL_8317.fits'),
+             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat3FHL_8317.fits')]
+        EBINS = np.array([(158.49,301.00), (301.00,524.81)
+                          (524.82,1000.00), (1000.00,1737.80), 
+                          (1737.80,2754.23), (2754.23,4786.30),
+                          (4786.30,8317.64), (8317.64,14454.40), 
+                          (14454.40,22908.68), (22908.68,39810.71), 
+                          (39810.71,69183.09),(69183.09,120226.44), 
+                          (120226.44,331131.12), (331131.12,1000000.00)])
+        emin = np.array([x[0] for x in EBINS]) 
+        emax = np.array([x[1] for x in EBINS]) 
+        emean = np.array([218.78,398.11,724.44,1318.26, 2187.76,3630.78,
+                          6309.57,10964.78,18197.01,30199.52,52480.75,91201.08,
+                          199526.23,575439.94])
+        cn = np.array([1.464618e-16,4.965573e-17,2.448300e-17,2.867573e-18,
+                       1.129696e-18,6.847362e-19,3.189106e-19,1.397455e-19,
+                       5.380968e-20,3.033270e-20,1.242414e-20,4.835532e-21,
+                       2.443251e-21,4.048537e-22])
+        
+        cps = []
+        for i, (e_min, e_max) in enumerate(EBINS):
+            out_name_srctempl = os.path.join(out_srctempl_folder,
+                                             'src%s_%i-%i.fits'\
+                                             %(cat, e_min, e_max))
+            if os.path.exists(out_name_srctempl):
+                 src_map = hp.read_map(out_name_srctempl)
+            else:
+                if i < 3:
+                    src_map = build_src_template(cat_file, psf32_file, 
+                                                 emin=e_min, 
+                                                 emax=e_max, b_cut=abslatitude)
+                else:
+                    src_map = build_src_template(cat_file, psf56_file, 
+                                                 emin=e_min, 
+                                                 emax=e_max, b_cut=abslatitude)
+            mask_f = mask_list[i]
+            mask = hp.read_map(mask_f)
+            _unmask = np.where(mask > 1e-30)[0]
+            src_map_masked = hp.ma(src_map)
+            src_map_masked.mask = np.logical_not(mask)
+            cp = np.sum((src_map[_unmask])**2)
+            cps.append(cp)
+            print cp-cn[i]
+        #titolo = 'Energy: %.1f - %.1f MeV, E$^2$Flux$_{mean}$=%e'%(e_min, 
+        #                                                           e_max, 
+        #                                                           tot_flux)
+        #hp.mollview(src_map_masked.filled(), title=titolo, 
+        #            coord='G', norm='log')#,norm='log'), min=1.5e-7, max=4e-7)
+        #hp.graticule()
+        plt.figure()
+        plt.plot(emean, (emean**4/(emax-emin)**2)*np.array(cps-cn), '.')
         plt.show()
+            
         
         
 
