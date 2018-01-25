@@ -70,13 +70,12 @@ __description__ = 'Computes fluxes'
 """
 import ast
 import argparse
-from scipy.optimize import curve_fit
 from GRATools import GRATOOLS_OUT
+print GRATOOLS_OUT
 from GRATools import GRATOOLS_CONFIG
 from GRATools.utils.matplotlib_ import pyplot as plt
 from GRATools.utils.logging_ import logger, startmsg
-from  GRATools.utils.gFTools import get_energy_from_fits
-from GRATools.utils.gFTools import get_crbkg
+from GRATools.utils.gFTools import get_energy_from_fits
 from GRATools.utils.gSpline import xInterpolatedUnivariateSplineLinear
 
 formatter = argparse.ArgumentDefaultsHelpFormatter
@@ -86,8 +85,8 @@ PARSER.add_argument('--config', type=str, required=True,
                     help='the input configuration file')
 PARSER.add_argument('--udgrade', type=int, default=512,
                     help='down/up-grade of the maps')
-PARSER.add_argument('--foresub', type=ast.literal_eval, choices=[True, False],
-                    default=False,
+PARSER.add_argument('--foresub', type=str, choices=['gal', 'galsrc'],
+                    default='gal',
                     help='galactic foreground subtraction activated')
 
 def get_var_from_file(filename):
@@ -117,6 +116,8 @@ def mkRestyle(**kwargs):
         '# \t E_MIN \t E_MAX \t E_MEAN \t F_MEAN \t FERR_MEAN \t CN \t FSKY \n')
     fore_mean_list = []
     norm_list, norm_sx_list, norm_dx_list = [], [], []
+    norm1_list, norm1_sx_list, norm1_dx_list = [], [], []
+    norm2_list, norm2_sx_list, norm2_dx_list = [], [], []
     const_list, const_sx_list, const_dx_list = [], [], []
     for i, (minb, maxb) in enumerate(macro_bins):
         all_counts, all_exps = [], []
@@ -225,11 +226,11 @@ def mkRestyle(**kwargs):
         macro_counts = all_counts[0]
 
         # implement foreground subtraction
-        if kwargs['foresub'] == True:
+        from GRATools.utils.gForeground import get_fore_integral_flux_map
+        from GRATools.utils.gForeground import get_ref_igrb_spline
+        if kwargs['foresub'] == 'gal':
             _norm_list, _norm_sx_list, _norm_dx_list = [], [], []
             _const_list, _const_sx_list, _const_dx_list = [], [], []
-            from GRATools.utils.gForeground import get_fore_integral_flux_map
-            from GRATools.utils.gForeground import get_ref_igrb_spline
             from GRATools.utils.gForeground import fit_foreground_poisson
             out_fore_folder = os.path.join(GRATOOLS_OUT, 'output_fore')
             out_name_fore = os.path.join(out_fore_folder,'fore_%i-%i.fits'\
@@ -245,7 +246,7 @@ def mkRestyle(**kwargs):
             n0, c0, n0_sx, n0_dx, c0_sx, c0_dx = \
                 fit_foreground_poisson(all_fore[0], 
                                        all_counts[0],
-                                       mask,
+                                       mask_map=mask,
                                        exp=all_exps[0],
                                        n_guess=1., 
                                        c_guess=all_c_guess[0])
@@ -257,12 +258,12 @@ def mkRestyle(**kwargs):
             _const_dx_list.append(c0_dx)
             macro_flux = flux_map[0]-n0*all_fore[0]
             macro_fore = n0*all_fore[0]
-            CN = np.mean(all_counts[0][_unmask]/(all_exps[0][_unmask])**2)/sr
+            CN = np.mean(all_counts[0][_unmask]/(all_exps[0][_unmask])**2)/sr 
             for b in range(1, len(flux_map)):
                 n, c, n_sx, n_dx, c_sx, c_dx = \
                     fit_foreground_poisson(all_fore[b], 
                                            all_counts[b], 
-                                           mask,
+                                           mask_map=mask,
                                            exp=all_exps[b],
                                            n_guess=1., 
                                            c_guess=all_c_guess[b])
@@ -290,6 +291,102 @@ def mkRestyle(**kwargs):
             norm_list.append(np.mean(np.array(_norm_list)))
             norm_sx_list.append(np.amin(np.array(_norm_sx_list)))
             norm_dx_list.append(np.amax(np.array(_norm_dx_list)))
+            const_list.append(np.sum(np.array(_const_list)))
+            const_sx_list.append(np.sum(np.array(_const_sx_list)))
+            const_dx_list.append(np.sum(np.array(_const_dx_list)))
+        elif kwargs['foresub'] == 'galsrc':
+            cat_file = data.CAT_FILE
+            psf_file = data.PSF_FILE 
+            _norm1_list, _norm1_sx_list, _norm1_dx_list = [], [], []
+            _norm2_list, _norm2_sx_list, _norm2_dx_list = [], [], []
+            _const_list, _const_sx_list, _const_dx_list = [], [], []
+            from GRATools.utils.gSourceTemplate import build_src_template
+            from GRATools.utils.gForeground import fit_fore_src_poisson
+            out_fore_folder = os.path.join(GRATOOLS_OUT, 'output_fore')
+            out_name_fore = os.path.join(out_fore_folder,'fore_%i-%i.fits'\
+                                             %(E_MIN, E_MAX))
+            if not os.path.exists(out_fore_folder):
+                os.makedirs(out_fore_folder)
+            all_fore = []
+            all_srctempl = []
+            all_c_guess = []
+            for ii, (e1, e2) in enumerate(zip(emin, emax)):
+                fore = get_fore_integral_flux_map(fore_files, e1, e2)
+                all_fore.append(fore)
+                cat = os.path.basename(cat_file).replace('.fit','')
+                out_name_srctempl = os.path.join(GRATOOLS_OUT,
+                                                 'output_src/src%s_%i-%i.fits'\
+                                                     %(cat, e1, e2))       
+                if not os.path.exists(out_name_srctempl):
+                    srctempl_map = build_src_template(cat_file, psf_file,
+                                                     emin=e1, emax=e2, b_cut=10)
+                else:
+                    logger.info('Retriving source template...')
+                    srctempl_map = hp.read_map(out_name_srctempl)
+                all_srctempl.append(srctempl_map)
+                all_c_guess.append(get_ref_igrb_spline()(emean[ii])*100)
+            n10, n20, c0, (n10_sx, n10_dx), (n20_sx, n20_dx), (c0_sx, c0_dx) = \
+                fit_fore_src_poisson(all_fore[0], 
+                                       all_counts[0],
+                                       all_srctempl[0],
+                                       mask_map=mask,
+                                       exp=all_exps[0],
+                                       n1_guess=1., 
+                                       n2_guess=1., 
+                                       c_guess=all_c_guess[0])
+            _norm1_list.append(n10)
+            _norm1_sx_list.append(n10_sx)
+            _norm1_dx_list.append(n10_dx)
+            _norm2_list.append(n20)
+            _norm2_sx_list.append(n20_sx)
+            _norm2_dx_list.append(n20_dx)
+            _const_list.append(c0)
+            _const_sx_list.append(c0_sx)
+            _const_dx_list.append(c0_dx)
+            macro_flux = flux_map[0]-n10*all_fore[0]-n20*all_srctempl[0]
+            macro_fore = n10*all_fore[0]
+            CN = np.mean(all_counts[0][_unmask]/(all_exps[0][_unmask])**2)/sr 
+            for b in range(1, len(flux_map)):
+                n1, n2, c, (n1_sx, n1_dx), (n2_sx, n2_dx), (c_sx, c_dx) = \
+                    fit_fore_src_poisson(all_fore[b], 
+                                         all_counts[b],
+                                         all_srctempl[b],
+                                         mask_map=mask,
+                                         exp=all_exps[b],
+                                         n1_guess=1., 
+                                         n2_guess=1.,
+                                         c_guess=all_c_guess[b])
+                _norm1_list.append(n1)
+                _norm1_sx_list.append(n1_sx)
+                _norm1_dx_list.append(n1_dx)
+                _norm2_list.append(n2)
+                _norm2_sx_list.append(n2_sx)
+                _norm2_dx_list.append(n2_dx)
+                _const_list.append(c)
+                _const_sx_list.append(c_sx)
+                _const_dx_list.append(c_dx)
+                fluxerr = (emean[b]/emean[0])**(-gamma)/(all_exps[b])**2
+                macro_fluxerr = macro_fluxerr + fluxerr
+                macro_flux = macro_flux+flux_map[b]-n1*all_fore[b]-n2*all_srctempl[b]
+                macro_counts = macro_counts + all_counts[b]
+                macro_fore = macro_fore + n1*all_fore[b]
+                netcounts = all_counts[0]
+                CN = CN + np.mean(all_counts[b][_unmask]/ \
+                                      (all_exps[b][_unmask])**2)/sr
+            logger.info('CN (white noise) term = %e'%CN)
+            macro_fluxerr = (np.sqrt(all_counts[0]*macro_fluxerr)/sr)
+            macro_fore_masked = hp.ma(macro_fore)
+            macro_fore_masked.mask = np.logical_not(mask)
+            hp.write_map(out_name_fore, macro_fore, coord='G')
+            logger.info('Created %s' %out_name_fore)
+            FORE_MEAN = np.mean(macro_fore[_unmask])
+            fore_mean_list.append(FORE_MEAN)
+            norm1_list.append(np.mean(np.array(_norm1_list)))
+            norm1_sx_list.append(np.amin(np.array(_norm1_sx_list)))
+            norm1_dx_list.append(np.amax(np.array(_norm1_dx_list)))
+            norm2_list.append(np.mean(np.array(_norm2_list)))
+            norm2_sx_list.append(np.amin(np.array(_norm2_sx_list)))
+            norm2_dx_list.append(np.amax(np.array(_norm2_dx_list)))
             const_list.append(np.sum(np.array(_const_list)))
             const_sx_list.append(np.sum(np.array(_const_sx_list)))
             const_dx_list.append(np.sum(np.array(_const_dx_list)))
@@ -339,15 +436,27 @@ def mkRestyle(**kwargs):
         print('F_MEAN, FERR_MEAN = ', F_MEAN, FERR_MEAN)
         new_txt.write('%.2f \t %.2f \t %.2f \t %e \t %e \t %e \t %f \n' \
                           %(E_MIN, E_MAX, E_MEAN, F_MEAN, FERR_MEAN, CN, FSKY))
-    if kwargs['foresub'] == True:
+    if kwargs['foresub'] == 'gal':
         new_txt.write('\n\n*** FOREGROUND PARAMETERS***\n\n')
-        new_txt.write('MEAN FLUX \t %s\n' %str(fore_mean_list))
-        new_txt.write('NORM FIT PARAM \t %s\n' %str(norm_list))
-        new_txt.write('NORM FIT PARAM  errsx \t %s\n' %str(norm_sx_list))
-        new_txt.write('NORM FIT PARAM errdx \t %s\n' %str(norm_dx_list))
-        new_txt.write('IGRB FIT PARAM \t %s\n' %str(const_list))
-        new_txt.write('IGRB FIT PARAM errsx \t %s\n' %str(const_sx_list))
-        new_txt.write('IGRB FIT PARAM errdx \t %s\n' %str(const_dx_list))
+        new_txt.write('MEAN_FORE_FLUX \t %s\n' %str(fore_mean_list))
+        new_txt.write('NORM_FIT_PARAM \t %s\n' %str(norm_list))
+        new_txt.write('NORM_FIT_PARAM  errsx \t %s\n' %str(norm_sx_list))
+        new_txt.write('NORM_FIT_PARAM errdx \t %s\n' %str(norm_dx_list))
+        new_txt.write('IGRB_FIT_PARAM \t %s\n' %str(const_list))
+        new_txt.write('IGRB_FIT_PARAM errsx \t %s\n' %str(const_sx_list))
+        new_txt.write('IGRB_FIT_PARAM errdx \t %s\n' %str(const_dx_list))
+    if kwargs['foresub'] == 'galsrc':
+        new_txt.write('\n\n*** FOREGROUND PARAMETERS***\n\n')
+        new_txt.write('MEAN_FORE_FLUX \t %s\n' %str(fore_mean_list))
+        new_txt.write('NORM_FORE_FIT PARAM \t %s\n' %str(norm1_list))
+        new_txt.write('NORM_FORE_FIT PARAM  errsx \t %s\n' %str(norm1_sx_list))
+        new_txt.write('NORM_FORE_FIT PARAM errdx \t %s\n' %str(norm1_dx_list))
+        new_txt.write('NORM_SRC_FIT PARAM \t %s\n' %str(norm2_list))
+        new_txt.write('NORM_SRC_FIT PARAM  errsx \t %s\n' %str(norm2_sx_list))
+        new_txt.write('NORM_SRC_FIT PARAM errdx \t %s\n' %str(norm2_dx_list))
+        new_txt.write('IGRB_FIT_PARAM \t %s\n' %str(const_list))
+        new_txt.write('IGRB_FIT_PARAM errsx \t %s\n' %str(const_sx_list))
+        new_txt.write('IGRB_FIT_PARAM errdx \t %s\n' %str(const_dx_list))
     new_txt.close()
     logger.info('Created %s' %os.path.join(GRATOOLS_OUT, 
                                      '%s_%s_%s_parameters.txt'\
