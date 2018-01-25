@@ -80,9 +80,9 @@ def remove_monopole(map_file_name, mask_file=None):
         mask = hp.read_map(mask_file)
         _index = np.where(mask<1e-30)[0] 
         flux_map[_index] = hp.UNSEEN
-    res = hp.pixelfunc.remove_monopole(flux_map, copy=True, fitval=False)
+    res, mono = hp.pixelfunc.remove_monopole(flux_map, copy=True, fitval=True)
     hp.write_map(map_file_name_clean, res )
-    return map_file_name_clean
+    return map_file_name_clean, mono
 
 def remove_monopole_dipole(map_file_name, mask_file=None):
     """Returns a map obtained from the one given and cleaned for monopole and
@@ -101,7 +101,7 @@ def remove_monopole_dipole(map_file_name, mask_file=None):
     res, mono, dipo = hp.pixelfunc.remove_dipole(flux_map, copy=True, 
                                                  fitval=True, verbose=True)
     hp.write_map(map_file_name_clean, res )
-    return map_file_name_clean, mono
+    return map_file_name_clean, mono, dipo
 
 def remove_multipole(map_file_name, lmax=10):
     """Returns a map obtained from the one given and cleaned for monopole and
@@ -116,7 +116,6 @@ def remove_multipole(map_file_name, lmax=10):
     map_file_name_clean = map_file_name.replace('.fits', '_multiclean.fits')
     flux_map = hp.read_map(map_file_name)
     alm = hp.sphtfunc.map2alm(flux_map)
-    print alm
     map_to_remove = hp.sphtfunc.alm2map(alm, hp.npix2nside(len(flux_map)))
     hp.mollview(map_to_remove)
     plt.show()
