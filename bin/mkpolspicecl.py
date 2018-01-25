@@ -98,13 +98,14 @@ def mkCl(**kwargs):
     cl_txt = open(os.path.join(GRATOOLS_OUT, '%s_%s_polspicecls.txt' \
                                    %(out_label, binning_label)), 'w')
     monopoles, monopoles_err = [], []
+    dipol_vectors = []
     from GRATools.utils.gWindowFunc import get_integral_wbeam
     for i, (emin, emax) in enumerate(zip(_emin, _emax)):
         logger.info('Considering bin %.2f - %.2f ...'%(emin, emax))
         mask_f = mask_file
         if type(mask_file) == list:
             mask_f = mask_file[i]
-        mask = hp.read_map(mask_f)
+        #mask = hp.read_map(mask_f)
         wb_en = get_integral_wbeam(out_wb_txt, energy_spec, emin, emax)
         cl_txt.write('ENERGY\t %.2f %.2f %.2f\n'%(emin, emax, _emean[i]))
         l_max= lmax
@@ -113,10 +114,13 @@ def mkCl(**kwargs):
         # monopole and dipole cleaning from MASKED map, bad value = UNSEEN
         flux_map_name = in_label+'_fluxmasked_%i-%i.fits'%(emin, emax)
         flux_map_f = os.path.join(GRATOOLS_OUT_FLUX, flux_map_name)
-        flux_map_f_mdclean, mono = remove_monopole_dipole(flux_map_f)
+        flux_map_f_mdclean, mono, dipo = remove_monopole_dipole(flux_map_f)
         monopoles.append(mono)
         mono_err = np.sqrt(2/_fsky[i])*(mono+_cn[i])
         monopoles_err.append(mono_err)
+        dipol_vectors.append(dipo)
+        logger.info('Monopole_term = %e +- %e'%(mono, mono_err))
+        logger.info('Dipole vector = %s' %(str(dipo)))
         # Up to l=n cleaning from MASKED map (correction for fsky discarded)
         if kwargs['multiclean'] is not None:
             flux_map_f_multiclean =  remove_multipole(flux_map_f_mdclean, 
@@ -147,7 +151,7 @@ def mkCl(**kwargs):
             if key == 'covfileout':
                  pol_dict[key] = os.path.join(out_folder,'%s_cov.fits'%out_name)
             if key == 'mapfile':
-                pol_dict[key] = flux_map_f#_mdclean
+                pol_dict[key] = flux_map_f_mdclean
             if key == 'maskfile':
                 pol_dict[key] = mask_f
         config_file_name = 'pol_%s'%(out_name)
