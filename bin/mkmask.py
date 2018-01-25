@@ -53,9 +53,9 @@ PARSER.add_argument('--reversesrcmask', type=ast.literal_eval,
                     choices=[True, False],
                     default=False,
                     help='True to reverse the sources mask')
-PARSER.add_argument('--gpmask', type=ast.literal_eval, choices=[True, False],
-                    default=False,
-                    help='galactic plain mask activated')
+PARSER.add_argument('--gpmask', type=str, choices=['no','shape', 'flat'],
+                    default='flat',
+                    help='galactic plain mask')
 PARSER.add_argument('--northmask', type=ast.literal_eval, choices=[True, False],
                     default=False,
                     help='northern hemisphere mask activated')
@@ -139,10 +139,14 @@ def mkMask(**kwargs):
             bad_pix += list(np.where(~mask)[0])
         else:
             bad_pix += mask_src_weighted_custom(cat_file, energy, nside)
-    if kwargs['gpmask'] == True:
+    if kwargs['gpmask'] == 'flat':
         from GRATools.utils.gMasks import mask_gp
         gp_mask_lat = data.GP_MASK_LAT
-        bad_pix += mask_gp(gp_mask_lat, nside)  
+        bad_pix += mask_gp(gp_mask_lat, nside)
+    elif kwargs['gpmask'] == 'shape':
+        from GRATools.utils.gMasks import mask_bat_gp
+        gp_mask_lat = data.GP_MASK_LAT
+        bad_pix += mask_bat_gp(2.5e-7, nside)
     if kwargs['northmask'] == True:
         from GRATools.utils.gMasks import mask_hemi_north
         bad_pix += mask_hemi_north(nside) 
