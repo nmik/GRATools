@@ -4,7 +4,7 @@
 # On behalf of the Fermi-LAT Collaboration.                                    #
 #                                                                              #
 # This program is free software; you can redistribute it and/or modify         #
-# it under the terms of the GNU GengReral Public License as published by       #
+# it under the terms of the GNU General Public License as published by         #
 # the Free Software Foundation; either version 3 of the License, or            #
 # (at your option) any later version.                                          #
 #                                                                              #
@@ -17,6 +17,7 @@
 
 import os
 import re
+import sys
 import numpy as np
 import pyfits as pf
 import healpy as hp
@@ -119,12 +120,19 @@ def poisson_likelihood_2(norm1_guess, norm2_guess, const_guess, fore_map,
     lh = 0
     if exp is not None:
         for i, f in enumerate(fore_map):
-            lh += (a*f+c*s[i]+b)*exp[i]*sr + np.log(factorial_data[i]) - \
-                data_map[i]*np.log((a*f+c*s[i]+b)*exp[i]*sr)
+            model_counts = (a*f+c*s[i]+b)*exp[i]*sr
+            if data_map[i] > 50:
+                uno = 0.5*(data_map[i]-model_counts)/np.sqrt(model_counts)
+                due = np.log(1./np.sqrt(2*np.pi*model_counts))
+                lh = lh + uno - due
+            else:
+                due = np.log(factorial_data[i])
+                tre = data_map[i]*np.log(model_counts)
+                lh = lh + model_counts + due - tre
     else:
         for i, f in enumerate(fore_map):
-            lh += np.sum(((a*f+c*s[i]+b)+np.log(factorial_data[i]) -\
-                              data_map[i]*np.log((a*f+c*s[i]+b))))
+            lh += ((a*f+c*s[i]+b)+np.log(factorial_data[i]) -\
+                              data_map[i]*np.log((a*f+c*s[i]+b)))
     return lh
 
 @jit
@@ -168,7 +176,7 @@ def poisson_likelihood(norm_guess, const_guess, fore_map, data_map, exp=None,
     return lh
 
 def fit_fore_src_poisson(fore_map, data_map, srctempl_map, mask_map=None,
-                         n1_guess=1., c_guess=0.1, n2_guess=1., exp=None, 
+                         n1_guess=1., c_guess=1, n2_guess=1., exp=None, 
                          smooth=False, show=False):
     """Performs the poisonian fit, recursively computing the log likelihood 
        (using poisson_likelihood) for a grid of values of fit parameters around
@@ -221,14 +229,13 @@ def fit_fore_src_poisson(fore_map, data_map, srctempl_map, mask_map=None,
     mask_repix[np.where(mask_repix!=np.amax(mask_repix))[0]] = 0
     mask_repix[np.where(mask_repix==np.amax(mask_repix))[0]] = 1
     _unmask = np.where(mask_repix > 1e-30)[0]
-    hp.mollview(mask_repix)
-    hp.mollview(mask)
-    plt.show()
     logger.info('initial guesses: n1=%.1e, n2=%.1e, c=%.1e'%(norm1_guess, 
                                                              norm2_guess,
                                                              igrb_guess))
-    norm1_list = np.linspace(norm1_guess*0.3, norm1_guess*1.5, 21)
-    norm2_list = np.linspace(0, norm2_guess*1.5, 21)
+    norm1_list = np.linspace(norm1_guess*0.3, norm1_guess*2, 21)
+    norm2_list = np.linspace(norm2_guess*0.1, norm2_guess*10, 21)
+    print norm2_list
+    print norm1_list
     igrb_list = np.linspace(igrb_guess*0.01, igrb_guess*10., 101)
     logger.info('Minimization likelihood run1...')
     lh_list = []
@@ -251,10 +258,12 @@ def fit_fore_src_poisson(fore_map, data_map, srctempl_map, mask_map=None,
             lh_list.append(lh)
     lh_min = np.argmin(np.array(lh_list))
     (norm1_min, norm2_min, igrb_min) = combinations[lh_min]
-    logger.info('Run1 results: n1=%.3f n2=%.3f c=%e'%(norm1_min, norm2_min, 
+    logger.info('Run1 results: n1=%.3f n2=%.2e c=%.2e'%(norm1_min, norm2_min, 
                                                       igrb_min))
-    norm1_list = np.linspace(norm1_min*0.7, norm1_min*1.2, 21)
-    norm2_list = np.linspace(0, norm2_min*1.2, 21)   
+    norm1_list = np.linspace(norm1_min*0.9, norm1_min*1.7, 21)
+    norm2_list = np.linspace(norm2_min*0.5, norm2_min*5, 21)  
+    print norm2_list
+    print norm1_list
     igrb_list = np.linspace(igrb_min*0.5, igrb_min*1.5, 101)
     logger.info('Minimization likelihood run2...')
     lh_list = []
@@ -278,7 +287,7 @@ def fit_fore_src_poisson(fore_map, data_map, srctempl_map, mask_map=None,
     lh_list = np.array(lh_list)
     lh_min = np.argmin(lh_list)
     (norm1_min, norm2_min, igrb_min) = combinations[lh_min]
-    logger.info('Run2 results: n1=%.3f n2=%e c=%e'%(norm1_min, norm2_min, 
+    logger.info('Run2 results: n1=%.3f n2=%.2e c=%.2e'%(norm1_min, norm2_min, 
                                                       igrb_min))
     lh_delta = np.array(lh_list)[lh_min]+2.3
     index = np.where(np.array(lh_list) < lh_delta)[0]
@@ -286,11 +295,35 @@ def fit_fore_src_poisson(fore_map, data_map, srctempl_map, mask_map=None,
     logger.info('Norm1 err: %.4f - %.4f'%(_norm1[0], _norm1[-1]))
     n1_err = (_norm1[0], _norm1[-1])
     _norm2 = np.array([x[1] for x in combinations[index]])
-    logger.info('Norm2 err: %.4f - %.4f'%(_norm2[0], _norm2[-1]))
+    logger.info('Norm2 err: %.2e - %.2e'%(_norm2[0], _norm2[-1]))
     n2_err = (_norm2[0], _norm2[-1])
     _igrb = np.array([x[2] for x in combinations[index]])
-    logger.info('Igrb err: %.e - %.e'%(np.amin(_igrb), np.amax(_igrb)))
+    logger.info('Igrb err: %.2e - %.2e'%(np.amin(_igrb), np.amax(_igrb)))
     igrb_err = (np.amin(_igrb), np.amax(_igrb))
+    if show == True:
+        n1 = np.array([x[0] for x in combinations])
+        n2 = np.array([x[1] for x in combinations])
+        c = np.array([x[2] for x in combinations])
+        plt.figure(facecolor='white')
+        plt.plot(n2, lh_list, 'o', color='coral', alpha=0.3)
+        plt.plot(norm2_min, lh_list[lh_min] , 'r*')
+        plt.plot([_norm2[0], _norm2[-1]], [lh_delta, lh_delta], 'r-')
+        plt.xlabel('Normalization')
+        plt.ylabel('-Log(Likelihood)')
+        plt.title('norm src')
+        plt.figure(facecolor='white')
+        plt.plot(n1, lh_list, 'o', color='coral', alpha=0.3)
+        plt.plot(norm1_min, lh_list[lh_min] , 'r*')
+        plt.plot([_norm1[0], _norm1[-1]], [lh_delta, lh_delta], 'r-')
+        plt.xlabel('Normalization')
+        plt.ylabel('-Log(Likelihood)')
+        plt.title('norm fore')
+        plt.figure(facecolor='white')
+        plt.plot(c, lh_list, 'o', color='coral', alpha=0.3)
+        plt.plot(igrb_min, lh_list[lh_min] , 'r*')
+        plt.xlabel('Normalization')
+        plt.ylabel('-Log(Likelihood)')
+        plt.show()
     return norm1_min, norm2_min, igrb_min, n1_err, n2_err, igrb_err
 
 def fit_foreground_poisson(fore_map, data_map, mask_map=None, n_guess=1., 
