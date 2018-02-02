@@ -85,7 +85,7 @@ PARSER.add_argument('--config', type=str, required=True,
                     help='the input configuration file')
 PARSER.add_argument('--udgrade', type=int, default=512,
                     help='down/up-grade of the maps')
-PARSER.add_argument('--foresub', type=str, choices=['gal', 'galsrc'],
+PARSER.add_argument('--foresub', type=str, choices=['no', 'gal', 'galsrc'],
                     default='gal',
                     help='galactic foreground subtraction activated')
 
@@ -95,7 +95,7 @@ def get_var_from_file(filename):
     data = imp.load_source('data', '', f)
     f.close()
 
-def mkRestyle(**kwargs):
+def mkRestyle(**kwargs): 
     """
     """
     logger.info('Starting the restyling...')
@@ -440,23 +440,23 @@ def mkRestyle(**kwargs):
         new_txt.write('\n\n*** FOREGROUND PARAMETERS***\n\n')
         new_txt.write('MEAN_FORE_FLUX \t %s\n' %str(fore_mean_list))
         new_txt.write('NORM_FIT_PARAM \t %s\n' %str(norm_list))
-        new_txt.write('NORM_FIT_PARAM  errsx \t %s\n' %str(norm_sx_list))
-        new_txt.write('NORM_FIT_PARAM errdx \t %s\n' %str(norm_dx_list))
+        new_txt.write('NORM_FIT_PARAM_errsx \t %s\n' %str(norm_sx_list))
+        new_txt.write('NORM_FIT_PARAM_errdx \t %s\n' %str(norm_dx_list))
         new_txt.write('IGRB_FIT_PARAM \t %s\n' %str(const_list))
-        new_txt.write('IGRB_FIT_PARAM errsx \t %s\n' %str(const_sx_list))
-        new_txt.write('IGRB_FIT_PARAM errdx \t %s\n' %str(const_dx_list))
+        new_txt.write('IGRB_FIT_PARAM_errsx \t %s\n' %str(const_sx_list))
+        new_txt.write('IGRB_FIT_PARAM_errdx \t %s\n' %str(const_dx_list))
     if kwargs['foresub'] == 'galsrc':
         new_txt.write('\n\n*** FOREGROUND PARAMETERS***\n\n')
         new_txt.write('MEAN_FORE_FLUX \t %s\n' %str(fore_mean_list))
         new_txt.write('NORM_FORE_FIT PARAM \t %s\n' %str(norm1_list))
-        new_txt.write('NORM_FORE_FIT PARAM  errsx \t %s\n' %str(norm1_sx_list))
-        new_txt.write('NORM_FORE_FIT PARAM errdx \t %s\n' %str(norm1_dx_list))
-        new_txt.write('NORM_SRC_FIT PARAM \t %s\n' %str(norm2_list))
-        new_txt.write('NORM_SRC_FIT PARAM  errsx \t %s\n' %str(norm2_sx_list))
-        new_txt.write('NORM_SRC_FIT PARAM errdx \t %s\n' %str(norm2_dx_list))
+        new_txt.write('NORM_FORE_FIT PARAM_errsx \t %s\n' %str(norm1_sx_list))
+        new_txt.write('NORM_FORE_FIT PARAM_errdx \t %s\n' %str(norm1_dx_list))
+        new_txt.write('NORM_SRC_FIT_PARAM \t %s\n' %str(norm2_list))
+        new_txt.write('NORM_SRC_FIT_PARAM_errsx \t %s\n' %str(norm2_sx_list))
+        new_txt.write('NORM_SRC_FIT_PARAM_errdx \t %s\n' %str(norm2_dx_list))
         new_txt.write('IGRB_FIT_PARAM \t %s\n' %str(const_list))
-        new_txt.write('IGRB_FIT_PARAM errsx \t %s\n' %str(const_sx_list))
-        new_txt.write('IGRB_FIT_PARAM errdx \t %s\n' %str(const_dx_list))
+        new_txt.write('IGRB_FIT_PARAM_errsx \t %s\n' %str(const_sx_list))
+        new_txt.write('IGRB_FIT_PARAM_errdx \t %s\n' %str(const_dx_list))
     new_txt.close()
     logger.info('Created %s' %os.path.join(GRATOOLS_OUT, 
                                      '%s_%s_%s_parameters.txt'\
