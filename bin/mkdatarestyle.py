@@ -88,6 +88,9 @@ PARSER.add_argument('--udgrade', type=int, default=512,
 PARSER.add_argument('--foresub', type=str, choices=['no', 'gal', 'galsrc'],
                     default='gal',
                     help='galactic foreground subtraction activated')
+PARSER.add_argument('--nforefit', type=str, choices=['n', 'nlow', 'nhigh'],
+                    default='n',
+                    help='galactic foreground normalization: N,lower-end,upper-end')
 
 def get_var_from_file(filename):
     f = open(filename)
@@ -256,7 +259,12 @@ def mkRestyle(**kwargs):
             _const_list.append(c0)
             _const_sx_list.append(c0_sx)
             _const_dx_list.append(c0_dx)
-            macro_flux = flux_map[0]-n0*all_fore[0]
+            if kwargs['nforefit'] == 'nlow':
+                macro_flux = flux_map[0]-n0_sx*all_fore[0]
+            elif kwargs['nforefit'] == 'nhigh':
+                macro_flux = flux_map[0]-n0_dx*all_fore[0]
+            else:
+                macro_flux = flux_map[0]-n0*all_fore[0]
             macro_fore = n0*all_fore[0]
             CN = np.mean(all_counts[0][_unmask]/(all_exps[0][_unmask])**2)/sr 
             for b in range(1, len(flux_map)):
@@ -275,7 +283,12 @@ def mkRestyle(**kwargs):
                 _const_dx_list.append(c_dx)
                 fluxerr = (emean[b]/emean[0])**(-gamma)/(all_exps[b])**2
                 macro_fluxerr = macro_fluxerr + fluxerr
-                macro_flux = macro_flux + flux_map[b]-n*all_fore[b]
+                if kwargs['nforefit'] == 'nlow':
+                    macro_flux =  macro_flux + flux_map[b]-n_sx*all_fore[b]
+                elif kwargs['nforefit'] == 'nhigh':
+                    macro_flux =  macro_flux + flux_map[b]-n_dx*all_fore[b]
+                else:
+                    macro_flux = macro_flux + flux_map[b]-n*all_fore[b]
                 macro_counts = macro_counts + all_counts[b]
                 macro_fore = macro_fore + n*all_fore[b]
                 CN = CN + np.mean(all_counts[b][_unmask]/ \
