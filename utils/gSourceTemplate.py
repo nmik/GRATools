@@ -26,7 +26,7 @@ from GRATools.utils.matplotlib_ import pyplot as plt
 from GRATools.utils.gWindowFunc import get_psf
 from GRATools.utils.gSpline import xInterpolatedUnivariateSplineLinear
 
-_ENERGY = np.logspace(1, 6,1000)
+_ENERGY = np.logspace(1, 6,5000)
 
 def LogParabola(norm, index1, index2, pivot_energy):
     """Returns a spline of a LogParabola spectrum with given parameters
@@ -42,6 +42,15 @@ def PLSuperExpCutoff(norm, index, pivot_energy, index_cut, energy_cut):
     """
     _spec = norm*(_ENERGY/pivot_energy)**(-index)*np.exp((pivot_energy/ \
              energy_cut)**(-index_cut)-(_ENERGY/pivot_energy)**(-index_cut))
+    _spec_spline = xInterpolatedUnivariateSplineLinear(_ENERGY, _spec)
+    return _spec_spline
+
+def PLSuperExpCutoff2(norm, index, pivot_energy, index_cut, exp_fact):
+    """Returns a spline of a Powerlaw with exponential cutoff spectrum with 
+       given parameters
+    """
+    _spec = norm*(_ENERGY/pivot_energy)**(-index)*\
+        np.exp(exp_fact*(pivot_energy**(-index_cut)-_ENERGY**(-index_cut)))
     _spec_spline = xInterpolatedUnivariateSplineLinear(_ENERGY, _spec)
     return _spec_spline
 
@@ -73,10 +82,13 @@ def build_src_template(cat_file, psf_file, emin, emax, b_cut=20, nside=512):
     psf_th_e = get_psf(psf_file)
     emean = np.sqrt(emin*emax)
     psf_th = psf_th_e.vslice(emean)
-    integral_psf_th = psf_th.integral(psf_th.x[0], psf_th.x[-1])
-    print 'integral', integral_psf_th
-    psf_th = psf_th.scale(1/integral_psf_th)
-    #psf_th.plot()
+    th = np.linspace(psf_th.x[0], psf_th.x[-1], 1000)
+    sin_th = np.sin(th)
+    psfXsin_th = sin_th*psf_th(th)
+    psfXsin_th_spline = xInterpolatedUnivariateSplineLinear(th, psfXsin_th)
+    psfXsin_th_spline = psfXsin_th_spline.scale(2*np.pi)
+    integral_psf_norm = psfXsin_th_spline.integral(psf_th.x[0], psf_th.x[-1])
+    logger.info('Integral PSF shaped curve = %f'%integral_psf_norm)
     ##########################################################
     src_cat = pf.open(cat_file)
     CAT = src_cat['LAT_Point_Source_Catalog']
@@ -88,28 +100,34 @@ def build_src_template(cat_file, psf_file, emin, emax, b_cut=20, nside=512):
     GLAT =  GLAT[lat_index]
     GLON = SOURCES.field('GLON')[lat_index]
     FLUX1000 = SOURCES.field('Flux1000')[lat_index]
-    FLUX30_100 = SOURCES.field('Flux30_100')[lat_index]
-    FLUX100_300 = SOURCES.field('Flux100_300')[lat_index]
-    FLUX300_1000 = SOURCES.field('Flux300_1000')[lat_index]
-    E0 = SOURCES.field('Pivot_Energy')[lat_index]
-    K = SOURCES.field('Flux_Density')[lat_index] #cm-2 s-1 sr-1 MeV-1
-    alpha = GAMMA = SOURCES.field('Spectral_Index')[lat_index]
     spec_type = SOURCES.field('SpectrumType')[lat_index]
-    beta = SOURCES.field('beta')[lat_index]
-    b = SOURCES.field('Exp_Index')[lat_index]
-    Ecut = SOURCES.field('Cutoff')[lat_index]
+    E0 = SOURCES.field('Pivot_Energy')[lat_index]
+    K = SOURCES.field('Flux_Density')[lat_index] #cm-2 s-1 MeV-1
+    #alpha = GAMMA = SOURCES.field('Spectral_Index')[lat_index] #3FGL
+    alpha = SOURCES.field('PL_Index')[lat_index]
+    #beta = SOURCES.field('beta')[lat_index] #3FGL
+    alpha_lp = SOURCES.field('LP_Index')[lat_index]
+    beta = SOURCES.field('LP_beta')[lat_index]
+    GAMMA_plec = SOURCES.field('PLEC_Index')[lat_index]
+    b = SOURCES.field('PLEC_Exp_Index')[lat_index]
+    a = SOURCES.field('PLEC_Expfactor')[lat_index]
+    Ecut = SOURCES.field('Cutoff')[lat_index]#3FGL, discarded in FL8Y!!
     src_name = SOURCES.field('Source_Name')[lat_index]
     src_cat.close()
     ##########################################################
     INT_FLUXES = [] #cm-2 s-1 sr-1
     for i, s in enumerate(spec_type):
         spec = 0
-        if s == 'PowerLaw':
+        if 'PowerLaw' in s:
             spec = PowerLaw(K[i], alpha[i], E0[i])
             integral_flux_bin = spec.integral(emin, emax)
             INT_FLUXES.append(integral_flux_bin)
-        elif s == 'LogParabola':
-            spec = LogParabola(K[i], alpha[i], beta[i], E0[i])
+        elif 'LogParabola' in s:
+            spec = LogParabola(K[i], alpha_lp[i], beta[i], E0[i])
+            integral_flux_bin = spec.integral(emin, emax)
+            INT_FLUXES.append(integral_flux_bin)
+        elif 'PLSuperExpCutoff2' in s:
+            spec = PLSuperExpCutoff2(K[i], GAMMA_plec[i], E0[i], b[i], a[i])
             integral_flux_bin = spec.integral(emin, emax)
             INT_FLUXES.append(integral_flux_bin)
         else:
@@ -117,7 +135,8 @@ def build_src_template(cat_file, psf_file, emin, emax, b_cut=20, nside=512):
             integral_flux_bin = spec.integral(emin, emax)
             INT_FLUXES.append(integral_flux_bin)
     logger.info('Building...')
-    src_map = src_builder(psf_th, nside, GLON, GLAT, INT_FLUXES)
+    src_map = src_builder(psfXsin_th_spline, nside, GLON, GLAT, INT_FLUXES)
+    INT_FLUXES = np.array(INT_FLUXES)
     logger.info('Done!')
     out_srctempl_folder = os.path.join(GRATOOLS_OUT, 'output_src')
     if not os.path.exists(out_srctempl_folder):
@@ -126,6 +145,7 @@ def build_src_template(cat_file, psf_file, emin, emax, b_cut=20, nside=512):
     out_name_srctempl = os.path.join(out_srctempl_folder,'src%s_%i-%i.fits'\
                                              %(cat, emin, emax))
     hp.write_map(out_name_srctempl, src_map)
+    logger.info('Created: %s'%out_name_srctempl)
     return src_map
 
 @jit
@@ -147,14 +167,20 @@ def src_builder(psf_spline, nside, glon_, glat_, intflux_):
     x, y, z = hp.rotator.dir2vec(glon_, glat_, lonlat=True)
     src_pix = hp.pixelfunc.vec2pix(nside, x, y, z)
     isomap = np.zeros(hp.nside2npix(nside))
+    areapix = 4*np.pi/len(isomap)
     for i, bn in enumerate(src_pix):
         pixdir1 = hp.pixelfunc.pix2ang(nside, bn)
-        radintpix = hp.query_disc(nside, (x[i],y[i],z[i]), np.radians(10))
+        radintpix = hp.query_disc(nside, (x[i],y[i],z[i]), np.radians(9.5))
         pixdir2 = hp.pixelfunc.pix2ang(nside, radintpix)
         dist = hp.rotator.angdist(pixdir1, pixdir2)
-        psf = psf_spline(dist)
-        isomap[radintpix]= isomap[radintpix] + intflux_[i]*psf
-    srcfluxtempl = isomap
+        src_profile = psf_spline.scale(intflux_[i]/len(radintpix))
+        pix_flux_values = src_profile(dist)
+        integral_src_profile = src_profile.integral(psf_spline.x[0], psf_spline.x[-1])
+        logger.info('Integrated src flux = %e'%intflux_[i])
+        isomap[radintpix] = isomap[radintpix] + pix_flux_values
+        tot_flux_pix =  np.sum(isomap[radintpix])
+        logger.info('Total flux in pixels = %e'%tot_flux_pix)
+    srcfluxtempl = isomap/areapix
     return srcfluxtempl
 
 def main():
@@ -163,77 +189,42 @@ def main():
     sourcetemp = True
     
     if sourcetemp == True:
-        abslatitude = 0
+        abslatitude = 5
         out_srctempl_folder = os.path.join(GRATOOLS_OUT, 'output_src')
-        cat_file = os.path.join(GRATOOLS_CONFIG,'catalogs/gll_psc_v16.fit')
+        cat_file = os.path.join(GRATOOLS_CONFIG,'catalogs/gll_psc_8year_v6.fit')
         cat = os.path.basename(cat_file).replace('.fit','')
-        psf32_file = os.path.join(GRATOOLS_OUT, 
-                                'psf_P8R2_ULTRACLEANVETO_V6_32.fits')
         psf56_file = os.path.join(GRATOOLS_OUT, 
                                 'psf_P8R2_ULTRACLEANVETO_V6_56.fits')
-        mask_list = [os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat_420.fits'),
-             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat_420.fits'),
-             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat_524.fits'),
-             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat_1000.fits'),
-             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat_1737.fits'),
-             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat_2754.fits'),
-             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat_4786.fits'),
-             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat_8317.fits'),
-             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat3FHL_8317.fits'),
-             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat3FHL_8317.fits'),
-             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat3FHL_8317.fits'),
-             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat3FHL_8317.fits'),
-             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat3FHL_8317.fits'),
-             os.path.join(GRATOOLS_CONFIG, 'fits/Mask_bat3FHL_8317.fits')]
-        EBINS = np.array([(158.49,301.00), (301.00,524.81)
-                          (524.82,1000.00), (1000.00,1737.80), 
-                          (1737.80,2754.23), (2754.23,4786.30),
-                          (4786.30,8317.64), (8317.64,14454.40), 
-                          (14454.40,22908.68), (22908.68,39810.71), 
-                          (39810.71,69183.09),(69183.09,120226.44), 
-                          (120226.44,331131.12), (331131.12,1000000.00)])
+        mask_list = [os.path.join(GRATOOLS_CONFIG, 'fits/Mask_gp20.fits'),]
+        
+        EBINS = np.array([(570.0,800.00)])
+                          
         emin = np.array([x[0] for x in EBINS]) 
         emax = np.array([x[1] for x in EBINS]) 
-        emean = np.array([218.78,398.11,724.44,1318.26, 2187.76,3630.78,
-                          6309.57,10964.78,18197.01,30199.52,52480.75,91201.08,
-                          199526.23,575439.94])
-        cn = np.array([1.464618e-16,4.965573e-17,2.448300e-17,2.867573e-18,
-                       1.129696e-18,6.847362e-19,3.189106e-19,1.397455e-19,
-                       5.380968e-20,3.033270e-20,1.242414e-20,4.835532e-21,
-                       2.443251e-21,4.048537e-22])
+        emean = np.array([np.sqrt(570.0*800.00)])
         
-        cps = []
         for i, (e_min, e_max) in enumerate(EBINS):
             out_name_srctempl = os.path.join(out_srctempl_folder,
                                              'src%s_%i-%i.fits'\
                                              %(cat, e_min, e_max))
+            print out_name_srctempl 
             if os.path.exists(out_name_srctempl):
                  src_map = hp.read_map(out_name_srctempl)
             else:
-                if i < 3:
-                    src_map = build_src_template(cat_file, psf32_file, 
-                                                 emin=e_min, 
-                                                 emax=e_max, b_cut=abslatitude)
-                else:
-                    src_map = build_src_template(cat_file, psf56_file, 
-                                                 emin=e_min, 
-                                                 emax=e_max, b_cut=abslatitude)
+                src_map = build_src_template(cat_file, psf56_file, 
+                                             emin=e_min, 
+                                             emax=e_max, b_cut=abslatitude)
+            
             mask_f = mask_list[i]
             mask = hp.read_map(mask_f)
             _unmask = np.where(mask > 1e-30)[0]
+            tot_flux = np.mean(src_map[_unmask])
+            areapix =  4*np.pi/len(src_map)
+            print 'tot flux [cm-2s-1]: %e'%(tot_flux*areapix)
+            print 'tot flux [cm-2s-1sr-1]: %e'%(tot_flux)
             src_map_masked = hp.ma(src_map)
             src_map_masked.mask = np.logical_not(mask)
-            cp = np.sum((src_map[_unmask])**2)
-            cps.append(cp)
-            print cp-cn[i]
-        #titolo = 'Energy: %.1f - %.1f MeV, E$^2$Flux$_{mean}$=%e'%(e_min, 
-        #                                                           e_max, 
-        #                                                           tot_flux)
-        #hp.mollview(src_map_masked.filled(), title=titolo, 
-        #            coord='G', norm='log')#,norm='log'), min=1.5e-7, max=4e-7)
-        #hp.graticule()
-        plt.figure()
-        plt.plot(emean, (emean**4/(emax-emin)**2)*np.array(cps-cn), '.')
+            hp.mollview(src_map_masked, norm='log')
         plt.show()
             
         
