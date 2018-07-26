@@ -111,7 +111,7 @@ def build_src_template(cat_file, psf_file, emin, emax, b_cut=20, nside=512):
     GAMMA_plec = SOURCES.field('PLEC_Index')[lat_index]
     b = SOURCES.field('PLEC_Exp_Index')[lat_index]
     a = SOURCES.field('PLEC_Expfactor')[lat_index]
-    Ecut = SOURCES.field('Cutoff')[lat_index]#3FGL, discarded in FL8Y!!
+    #Ecut = SOURCES.field('Cutoff')[lat_index]#3FGL, discarded in FL8Y!!
     src_name = SOURCES.field('Source_Name')[lat_index]
     src_cat.close()
     ##########################################################
@@ -130,7 +130,7 @@ def build_src_template(cat_file, psf_file, emin, emax, b_cut=20, nside=512):
             spec = PLSuperExpCutoff2(K[i], GAMMA_plec[i], E0[i], b[i], a[i])
             integral_flux_bin = spec.integral(emin, emax)
             INT_FLUXES.append(integral_flux_bin)
-        else:
+        elif 'PLSuperExpCutoff' in s:
             spec = PLSuperExpCutoff(K[i], alpha[i], E0[i], b[i], Ecut[i])
             integral_flux_bin = spec.integral(emin, emax)
             INT_FLUXES.append(integral_flux_bin)
@@ -175,11 +175,7 @@ def src_builder(psf_spline, nside, glon_, glat_, intflux_):
         dist = hp.rotator.angdist(pixdir1, pixdir2)
         src_profile = psf_spline.scale(intflux_[i]/len(radintpix))
         pix_flux_values = src_profile(dist)
-        integral_src_profile = src_profile.integral(psf_spline.x[0], psf_spline.x[-1])
-        logger.info('Integrated src flux = %e'%intflux_[i])
         isomap[radintpix] = isomap[radintpix] + pix_flux_values
-        tot_flux_pix =  np.sum(isomap[radintpix])
-        logger.info('Total flux in pixels = %e'%tot_flux_pix)
     srcfluxtempl = isomap/areapix
     return srcfluxtempl
 
@@ -189,7 +185,7 @@ def main():
     sourcetemp = True
     
     if sourcetemp == True:
-        abslatitude = 5
+        abslatitude = 0
         out_srctempl_folder = os.path.join(GRATOOLS_OUT, 'output_src')
         cat_file = os.path.join(GRATOOLS_CONFIG,'catalogs/gll_psc_8year_v6.fit')
         cat = os.path.basename(cat_file).replace('.fit','')
@@ -197,38 +193,34 @@ def main():
                                 'psf_P8R2_ULTRACLEANVETO_V6_56.fits')
         mask_list = [os.path.join(GRATOOLS_CONFIG, 'fits/Mask_gp20.fits'),]
         
-        EBINS = np.array([(570.0,800.00)])
+        EBINS = np.array([(1000.0,1096.00)])
                           
         emin = np.array([x[0] for x in EBINS]) 
         emax = np.array([x[1] for x in EBINS]) 
-        emean = np.array([np.sqrt(570.0*800.00)])
+        emean = np.array([np.sqrt(1000.0*1096.00)])
         
         for i, (e_min, e_max) in enumerate(EBINS):
             out_name_srctempl = os.path.join(out_srctempl_folder,
-                                             'src%s_%i-%i.fits'\
+                                             'src%s_%i-%i_test.fits'\
                                              %(cat, e_min, e_max))
-            print out_name_srctempl 
             if os.path.exists(out_name_srctempl):
-                 src_map = hp.read_map(out_name_srctempl)
+                src_map = hp.read_map(out_name_srctempl)
             else:
                 src_map = build_src_template(cat_file, psf56_file, 
                                              emin=e_min, 
                                              emax=e_max, b_cut=abslatitude)
-            
+            hp.write_map(out_name_srctempl, src_map)
             mask_f = mask_list[i]
             mask = hp.read_map(mask_f)
             _unmask = np.where(mask > 1e-30)[0]
             tot_flux = np.mean(src_map[_unmask])
             areapix =  4*np.pi/len(src_map)
-            print 'tot flux [cm-2s-1]: %e'%(tot_flux*areapix)
-            print 'tot flux [cm-2s-1sr-1]: %e'%(tot_flux)
+            logger.info('tot flux [cm-2s-1]: %e'%(tot_flux*areapix))
+            logger.info('tot flux [cm-2s-1sr-1]: %e'%(tot_flux))
             src_map_masked = hp.ma(src_map)
             src_map_masked.mask = np.logical_not(mask)
             hp.mollview(src_map_masked, norm='log')
         plt.show()
-            
-        
-        
 
 
 if __name__ == '__main__':
