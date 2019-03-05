@@ -3,9 +3,10 @@ To use this package:
 
 0) - Install Fermi Science Tools
    - Install python 2.7 (or later)
-   - Install HEASARC FTools
+   - Install HEASARC FTools (https://heasarc.gsfc.nasa.gov/ftools/)
    - Install matplotlib
-   - Install healpy
+   - Install Healpy (https://healpy.readthedocs.io/en/latest/)
+   - Install PolSpice (http://www2.iap.fr/users/hivon/software/PolSpice/README.html)
 
 1) Set the environment:
   
