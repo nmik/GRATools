@@ -11,7 +11,7 @@ To use this package:
 1) Set the environment:
   
     export PYTHONPATH=:/path/to/this/package/${PYTHONPATH}
-    export PATH=/path/to/this/package/GRATools/apps:${PATH}
+    export PATH=/path/to/this/package/GRATools/bin:${PATH}
 
 2) Change the directory where the data files are stored in __init__.py.
 
